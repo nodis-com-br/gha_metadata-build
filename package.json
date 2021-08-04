@@ -1,0 +1,22 @@
+{
+  "name": "build-environment",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/artifact": "^0.3.5",
+    "@actions/core": "^1.4.0",
+    "@actions/github": "^4.0.0",
+    "aws-sdk": "^2.954.0",
+    "base-64": "^0.1.0",
+    "dotenv": "^8.6.0",
+    "fs": "0.0.1-security",
+    "node-fetch": "^2.6.1",
+    "standard-version": "^9.3.1"
+  }
+}

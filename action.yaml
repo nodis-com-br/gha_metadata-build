@@ -1,0 +1,44 @@
+name: 'metadata-build'
+description: ''
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
+inputs:
+  github_token:
+    description: ''
+    required: true
+  pypi_host:
+    description: ''
+    required: false
+  pypi_user:
+    description: ''
+    required: false
+  pypi_password:
+    description: ''
+    required: false
+  registry_host:
+    description: ''
+    required: false
+  registry_user:
+    description: ''
+    required: false
+  registry_password:
+    description: ''
+    required: false
+  chart_repository_host:
+    description: ''
+    required: false
+  chart_repository_user:
+    description: ''
+    required: false
+  chart_repository_password:
+    description: ''
+    required: false
+  skip_bump:
+    description: ''
+    required: false
+    default: 'false'
+  skip_version_validation:
+    description: ''
+    required: false
+    default: 'false'
