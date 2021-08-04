@@ -2,5 +2,3 @@
 node_modules
 .env
 environmentVars.json
-/dist/index1.js
-/dist/*.hbs
