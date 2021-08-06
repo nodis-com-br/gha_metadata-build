@@ -8,10 +8,17 @@ const AWS = require('aws-sdk');
 const config = require('./config.js');
 const process = require('process');
 const standardVersion = require('standard-version');
-
+const manifest = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8'));
 
 function getPreReleaseType(ref) {
-    for (const k in Object.keys(config.preReleaseTypes)) if (ref.match(config.preReleaseTypes[k].branchPattern)) return k;
+
+    let preReleaseType = null;
+
+    for (const k in config.preReleaseTypes) {
+        if (config.preReleaseTypes.hasOwnProperty(k)) preReleaseType = ref.match(config.preReleaseTypes[k].branchPattern) ? k : preReleaseType;
+    }
+
+    return preReleaseType
 }
 
 function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
@@ -53,13 +60,17 @@ function verifyArtifactOnS3(metadata) {
 
     s3.headObject(bucketParam, function(err) {
         metadata.SKIP_VERSION_VALIDATION || err || core.setFailed(config.versionConflictMessage);
-        publishMetadata(metadata);
+        publishMetadata(metadata, manifest);
     });
 }
 
-function publishMetadata(metadata) {
+function publishMetadata(metadata, manifest) {
 
     const artifactClient = artifact.create();
+
+    for (const k in manifest.overrides) {
+        if (manifest.overrides.hasOwnProperty(k)) metadata[k] = manifest.overrides[k];
+    }
 
     fs.writeFileSync('./metadata.json', JSON.stringify(metadata, null, 2));
 
@@ -94,10 +105,11 @@ function validateVersion(metadata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 
+
 let metadata = {
     SKIP_BUMP: core.getBooleanInput('skip_bump'),
     SKIP_VERSION_VALIDATION: core.getBooleanInput('skip_version_validation'),
-    SKIP_TESTS: JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8'))['skip_tests'],
+    SKIP_TESTS: manifest['skip_tests'],
     PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
     TARGET_BRANCH: process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF,
 };
@@ -113,7 +125,7 @@ metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.legacyPattern);
 metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 
 if (metadata.PRE_RELEASE_TYPE) standardVersionArgv.preRelease = metadata.PRE_RELEASE_TYPE;
-else metadata.VALIDATED_VERSION = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8')).version;
+else metadata.VALIDATED_VERSION = manifest.version;
 
 standardVersion(standardVersionArgv).then(() => {
 
@@ -160,7 +172,7 @@ standardVersion(standardVersionArgv).then(() => {
                         core.setFailed(config['versionConflictMessage'])
                     }
 
-                    publishMetadata(metadata)
+                    publishMetadata(metadata, manifest)
 
                 }).catch(error => core.setFailed(error))
 
@@ -177,7 +189,7 @@ standardVersion(standardVersionArgv).then(() => {
             fetch(chartsUrl, {headers: chartsHeaders , method: 'HEAD'}).then(response => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                publishMetadata(metadata)
+                publishMetadata(metadata, manifest)
 
             }).catch(error => core.setFailed(error));
 
@@ -208,7 +220,7 @@ standardVersion(standardVersionArgv).then(() => {
                 metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry_host') + '/' + imageName;
                 metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
 
-                publishMetadata(metadata)
+                publishMetadata(metadata, manifest)
 
             }).catch(error => core.setFailed(error));
 
@@ -224,7 +236,7 @@ standardVersion(standardVersionArgv).then(() => {
                 metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry_host') + '/' + metadata.PROJECT_NAME;
                 metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.PRE_RELEASE_TYPE, metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
 
-                publishMetadata(metadata)
+                publishMetadata(metadata, manifest)
 
             }).catch(error => core.setFailed(error));
 
