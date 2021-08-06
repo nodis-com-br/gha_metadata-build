@@ -1,8 +1,7 @@
 module.exports = {
-    versionFile: "manifest.json",
+    manifestFile: "manifest.json",
     versionConflictMessage: "Version already exists in repository",
-    publicRegistry: 'docker.io/nodisbr',
-    webappsArtifactBucket: 'nodis-webapps',
+    webappsArtifactBucket: 'nodis-webapp',
     webappBucketPrefix: 'nodis-web',
     lambdaBucketPrefix: 'nodis-lambda',
     legacyPattern: /^refs\/heads\/legacy\/.+$/,
@@ -54,11 +53,11 @@ module.exports = {
     },
     interpreters: ['python', 'nodejs', 'shell', 'docker', 'helm'],
     project_classes: {
-        packages: ['library', 'python-app'],
-        publicImages: ['public-image'],
-        privateImages: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
-        webapps: ['react-app'],
-        charts: ['helm-chart'],
+        package: ['library', 'python-app'],
+        publicImage: ['public-image'],
+        privateImage: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
+        webapp: ['react-app'],
+        helmChart: ['helm-chart'],
         lambda: ['lambda-function']
     }
 };

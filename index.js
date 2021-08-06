@@ -68,6 +68,7 @@ function publishMetadata(metadata) {
         .catch(error => core.setFailed(error));
 
     core.info('Metadata: ' + JSON.stringify(metadata, null, 4));
+
 }
 
 function getDeployEnvironment(metadata) {
@@ -96,26 +97,27 @@ function validateVersion(metadata) {
 let metadata = {
     SKIP_BUMP: core.getBooleanInput('skip_bump'),
     SKIP_VERSION_VALIDATION: core.getBooleanInput('skip_version_validation'),
+    SKIP_TESTS: JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8'))['skip_tests'],
     PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
     TARGET_BRANCH: process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF,
-    PRE_RELEASE_TYPE: getPreReleaseType(process.env.GITHUB_REF),
 };
 
-metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.legacyPattern);
-
 let standardVersionArgv = {
-    packageFiles: [config.versionFile],
+    packageFiles: [config.manifestFile],
     silent: metadata.SKIP_BUMP,
     dryRun: metadata.SKIP_BUMP,
     gitTagFallback: false
 };
 
-if (!metadata.PRE_RELEASE_TYPE) standardVersionArgv.preRelease = metadata.PRE_RELEASE_TYPE;
+metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.legacyPattern);
+metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
+
+if (metadata.PRE_RELEASE_TYPE) standardVersionArgv.preRelease = metadata.PRE_RELEASE_TYPE;
+else metadata.VALIDATED_VERSION = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8')).version;
 
 standardVersion(standardVersionArgv).then(() => {
 
-    metadata.PROJECT_VERSION = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.versionFile, 'utf-8'));
-    metadata.PROJECT_BASE_VERSION = metadata.PROJECT_VERSION.split('-')[0];
+    metadata.PROJECT_VERSION = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8')).version;
 
     // Fetch project topics from GitHub
     let gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
@@ -140,7 +142,7 @@ standardVersion(standardVersionArgv).then(() => {
 
     switch(getClassGrouping(metadata.PROJECT_CLASS)) {
 
-        case 'packages':
+        case 'package':
 
             if (metadata.INTERPRETER === 'python') {
 
@@ -166,11 +168,11 @@ standardVersion(standardVersionArgv).then(() => {
 
             break;
 
-        case 'charts':
+        case 'helmChart':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.substring(6);
 
-            let chartsUrl = 'https://' + core.getInput('chart_repository_host') +'/api/charts/' + metadata.PROJECT_NAME + '/' + metadata.PROJECT_NAME;
+            let chartsUrl = 'https://' + core.getInput('chart_repository') +'/api/charts/' + metadata.PROJECT_NAME + '/' + metadata.PROJECT_NAME;
             let chartsHeaders = buildBasicAuthHeader(core.getInput('chart_repository_user'), core.getInput( 'chart_repository_password'));
             fetch(chartsUrl, {headers: chartsHeaders , method: 'HEAD'}).then(response => {
 
@@ -196,14 +198,14 @@ standardVersion(standardVersionArgv).then(() => {
 
             break;
 
-        case 'publicImages':
+        case 'publicImage':
 
             const imageName = metadata.PROJECT_NAME.substring(3);
 
-            fetch('https://' + config.publicRegistry + '/v2/' + imageName + '/manifests/' + metadata.PROJECT_VERSION).then(response => {
+            fetch('https://' + core.getInput('container_registry') + '/v2/' + imageName + '/manifests/' + metadata.PROJECT_VERSION).then(response => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                metadata.DOCKER_IMAGE_NAME = config.publicRegistry + '/' + imageName;
+                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry_host') + '/' + imageName;
                 metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
 
                 publishMetadata(metadata)
@@ -212,14 +214,14 @@ standardVersion(standardVersionArgv).then(() => {
 
             break;
 
-        case 'privateImages':
+        case 'privateImage':
 
-            let registryUrl = 'https://' + core.getInput('registry_host') + '/v2/' + metadata.PROJECT_NAME + '/manifests/' + metadata.PROJECT_VERSION;
-            let registryHeaders = buildBasicAuthHeader(core.getInput('registry_user'), core.getInput( 'registry_password'));
+            let registryUrl = 'https://' + core.getInput('container_registry') + '/v2/' + metadata.PROJECT_NAME + '/manifests/' + metadata.PROJECT_VERSION;
+            let registryHeaders = buildBasicAuthHeader(core.getInput('container_registry_user'), core.getInput( 'container_registry_password'));
             fetch(registryUrl, {headers: registryHeaders}).then(response => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                metadata.DOCKER_IMAGE_NAME = core.getInput('registry_host') + '/' + metadata.PROJECT_NAME;
+                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry_host') + '/' + metadata.PROJECT_NAME;
                 metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.PRE_RELEASE_TYPE, metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
 
                 publishMetadata(metadata)
@@ -228,7 +230,7 @@ standardVersion(standardVersionArgv).then(() => {
 
             break;
 
-        case 'webapps':
+        case 'webapp':
 
             metadata.ARTIFACT_FILENAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz';
             metadata.ARTIFACT_BUCKET = config.webappsArtifactBucket;

@@ -7,33 +7,9 @@ inputs:
   github_token:
     description: ''
     required: true
-  pypi_host:
+  gh_global_token:
     description: ''
-    required: false
-  pypi_user:
-    description: ''
-    required: false
-  pypi_password:
-    description: ''
-    required: false
-  registry_host:
-    description: ''
-    required: false
-  registry_user:
-    description: ''
-    required: false
-  registry_password:
-    description: ''
-    required: false
-  chart_repository_host:
-    description: ''
-    required: false
-  chart_repository_user:
-    description: ''
-    required: false
-  chart_repository_password:
-    description: ''
-    required: false
+    required: true
   skip_bump:
     description: ''
     required: false
@@ -42,3 +18,39 @@ inputs:
     description: ''
     required: false
     default: 'false'
+  pypi_host:
+    description: ''
+    required: false
+    default: 'pypi.org'
+  pypi_user:
+    description: ''
+    required: false
+    default: 'guest'
+  pypi_password:
+    description: ''
+    required: false
+    default: 'guest'
+  container_registry:
+    description: ''
+    required: false
+    default: 'docker.io/nodisbr'
+  container_registry_user:
+    description: ''
+    required: false
+    default: 'guest'
+  container_registry_password:
+    description: ''
+    required: false
+    default: 'guest'
+  chart_repository:
+    description: ''
+    required: false
+    default: 'artifacthub.github.io/hub/chart/'
+  chart_repository_user:
+    description: ''
+    required: false
+    default: 'guest'
+  chart_repository_password:
+    description: ''
+    required: false
+    default: 'guest'
