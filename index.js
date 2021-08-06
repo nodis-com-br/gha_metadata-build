@@ -139,7 +139,7 @@ let standardVersionArgv = {
 metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.legacyPattern);
 metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 
-if (metadata.PRE_RELEASE_TYPE) standardVersionArgv.preRelease = metadata.PRE_RELEASE_TYPE;
+if (metadata.PRE_RELEASE_TYPE) standardVersionArgv.prerelease = metadata.PRE_RELEASE_TYPE;
 else metadata.VALIDATED_VERSION = manifest.version;
 
 standardVersion(standardVersionArgv).then(() => {
