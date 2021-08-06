@@ -148,7 +148,7 @@ standardVersion(standardVersionArgv).then(() => {
 
     // Fetch project topics from GitHub
     let gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
-    let gitHubHeaders = {Authorization: 'token ' + process.env.GITHUB_TOKEN, Accept: "application/vnd.github.mercy-preview+json"};
+    let gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
     return fetch(gitHubUrl, {headers: gitHubHeaders})
 
 }).then(response => {
