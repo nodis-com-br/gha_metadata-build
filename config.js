@@ -7,7 +7,7 @@ module.exports = {
     legacyPattern: /^refs\/heads\/legacy\/.+$/,
     preReleaseTypes: {
         dev: {
-            branchPattern: /^refs\/heads\/develop\/$/,
+            branchPattern: /^refs\/heads\/develop$/,
             environment: 'dev'
         },
         rc: {
@@ -52,7 +52,7 @@ module.exports = {
         }
     },
     interpreters: ['python', 'nodejs', 'shell', 'docker', 'helm'],
-    project_classes: {
+    projectClasses: {
         package: ['library', 'python-app'],
         publicImage: ['public-image'],
         privateImage: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],

@@ -8,7 +8,9 @@ const AWS = require('aws-sdk');
 const config = require('./config.js');
 const process = require('process');
 const standardVersion = require('standard-version');
-const manifest = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8'));
+
+const manifestFilePath = process.env.GITHUB_WORKSPACE + '/' + config.manifestFile;
+const manifest = JSON.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
 
 function getPreReleaseType(ref) {
 
@@ -24,7 +26,12 @@ function getPreReleaseType(ref) {
 function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
 
     let matches = [];
-    for (const t of projectTopics) if (t in typeCollection) matches.push(t);
+    for (const t of projectTopics) {
+        if (Array.isArray(typeCollection)) typeCollection.includes(t) && matches.push(t);
+        else {
+            if (t in typeCollection) matches.push(t);
+        }
+    }
 
     if (matches.length === 1) {
         core.info('Project ' + type + ': ' + matches[0]);
@@ -36,13 +43,21 @@ function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
 }
 
 function aggregateClasses() {
+
     let classArray = [];
-    for (const k in Object.keys(config.project_classes)) classArray = classArray.concat(config.project_classes[k]);
+
+    for (const k in config.projectClasses) {
+        if (config.projectClasses.hasOwnProperty(k)) classArray = classArray.concat(config.projectClasses[k])
+    }
+
     return classArray
 }
 
 function getClassGrouping(projectClass) {
-    for (const k in Object.keys(config.project_classes)) if (config.project_classes[k].includes(projectClass)) return k
+
+    for (const k in config.projectClasses) {
+        if (config.projectClasses.hasOwnProperty(k) && config.projectClasses[k].includes(projectClass)) return k
+    }
 }
 
 function buildBasicAuthHeader(user, password) {
@@ -93,7 +108,7 @@ function getDeployEnvironment(metadata) {
 
 function validateVersion(metadata) {
 
-    if (metadata.TARGET_BRANCH.match(config.environments[metadata.DEPLOY_ENVIRONMENT].versionPattern)) return true;
+    if (metadata.PROJECT_VERSION.match(config.environments[metadata.DEPLOY_ENVIRONMENT].versionPattern)) return true;
     else {
         core.setFailed(['Branch mismatch: version', metadata.PROJECT_VERSION, 'should not be committed to branch', metadata.TARGET_BRANCH].join(' '));
         return false
@@ -115,7 +130,7 @@ let metadata = {
 };
 
 let standardVersionArgv = {
-    packageFiles: [config.manifestFile],
+    packageFiles: [manifestFilePath],
     silent: metadata.SKIP_BUMP,
     dryRun: metadata.SKIP_BUMP,
     gitTagFallback: false
@@ -133,15 +148,17 @@ standardVersion(standardVersionArgv).then(() => {
 
     // Fetch project topics from GitHub
     let gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
-    let gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
+    let gitHubHeaders = {Authorization: 'token ' + process.env.GITHUB_TOKEN, Accept: "application/vnd.github.mercy-preview+json"};
     return fetch(gitHubUrl, {headers: gitHubHeaders})
 
 }).then(response => {
 
-    if (response['status'] === 200) return response['json']().names;
+    if (response['status'] === 200) return response['json']();
     else throw ['Could not retrieve topics:', response['status'], response['statusText']].join(' ')
 
-}).then(projectTopics => {
+}).then(response => {
+
+    const projectTopics = response['names'];
 
     // Validate project topics
     metadata.TEAM = getMetadataFromTopics('team', config.teams, projectTopics, true);
@@ -217,7 +234,7 @@ standardVersion(standardVersionArgv).then(() => {
             fetch('https://' + core.getInput('container_registry') + '/v2/' + imageName + '/manifests/' + metadata.PROJECT_VERSION).then(response => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry_host') + '/' + imageName;
+                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry') + '/' + imageName;
                 metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
 
                 publishMetadata(metadata, manifest)
@@ -233,7 +250,7 @@ standardVersion(standardVersionArgv).then(() => {
             fetch(registryUrl, {headers: registryHeaders}).then(response => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry_host') + '/' + metadata.PROJECT_NAME;
+                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry') + '/' + metadata.PROJECT_NAME;
                 metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.PRE_RELEASE_TYPE, metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
 
                 publishMetadata(metadata, manifest)
