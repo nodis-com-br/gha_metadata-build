@@ -28,16 +28,13 @@ function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
     let matches = [];
     for (const t of projectTopics) {
         if (Array.isArray(typeCollection)) typeCollection.includes(t) && matches.push(t);
-        else {
-            if (t in typeCollection) matches.push(t);
-        }
+        else t in typeCollection && matches.push(t);
     }
 
     if (matches.length === 1) {
         core.info('Project ' + type + ': ' + matches[0]);
         return matches[0]
-    }
-    else if (matches.length === 0) required && core.setFailed('Project missing ' + type + ' topic');
+    } else if (matches.length === 0) required && core.setFailed('Project missing ' + type + ' topic');
     else core.setFailed('Project has multiple ' + type + ' topics [' + matches.join(' ') + ']');
 
 }
@@ -83,8 +80,8 @@ function publishMetadata(metadata, manifest) {
 
     const artifactClient = artifact.create();
 
-    for (const k in manifest.overrides) {
-        if (manifest.overrides.hasOwnProperty(k)) metadata[k] = manifest.overrides[k];
+    if ('overrides' in manifest) {
+        for (const k in manifest.overrides) if (manifest.overrides.hasOwnProperty(k)) metadata[k] = manifest.overrides[k];
     }
 
     fs.writeFileSync('./metadata.json', JSON.stringify(metadata, null, 2));
@@ -251,7 +248,7 @@ standardVersion(standardVersionArgv).then(() => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
                 metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry') + '/' + metadata.PROJECT_NAME;
-                metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.PRE_RELEASE_TYPE, metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
+                metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
 
                 publishMetadata(metadata, manifest)
 
