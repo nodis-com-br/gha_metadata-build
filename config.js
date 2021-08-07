@@ -4,7 +4,6 @@ module.exports = {
     webappsArtifactBucket: 'nodis-webapp',
     webappBucketPrefix: 'nodis-web',
     lambdaBucketPrefix: 'nodis-lambda',
-    legacyPattern: /^refs\/heads\/legacy\/.+$/,
     preReleaseTypes: {
         dev: {
             branchPattern: /^refs\/heads\/develop$/,
@@ -14,6 +13,29 @@ module.exports = {
             branchPattern: /^refs\/heads\/release\/.+$/,
             environment: 'quality'
         },
+    },
+    customBranches: {
+        legacy: {
+            branchPattern: /^refs\/heads\/legacy\/.+$/
+        },
+        hotfix: {
+            branchPattern: /^refs\/heads\/hotfix\/.+$/,
+            environment: 'quality'
+        }
+    },
+    environments: {
+        dev: {
+            versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/
+        },
+        quality: {
+            versionPattern: /^\d+\.\d+\.\d+-rc\.\d+$/
+        },
+        prod: {
+            versionPattern: /^\d+\.\d+\.\d+$/
+        },
+        catalog: {
+            versionPattern: /^\d+\.\d+\.\d+$/
+        }
     },
     teams: {
         devback: {
@@ -37,25 +59,11 @@ module.exports = {
             environment: 'catalog'
         }
     },
-    environments: {
-        dev: {
-            versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/
-        },
-        quality: {
-            versionPattern: /^\d+\.\d+\.\d+-rc\.\d+$/
-        },
-        prod: {
-            versionPattern: /^\d+\.\d+\.\d+$/
-        },
-        catalog: {
-            versionPattern: /^\d+\.\d+\.\d+$/
-        }
-    },
     interpreters: ['python', 'nodejs', 'shell', 'docker', 'helm'],
     projectClasses: {
         package: ['library', 'python-app'],
+        kubernetesWorkload: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
         publicImage: ['public-image'],
-        privateImage: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
         webapp: ['react-app'],
         helmChart: ['helm-chart'],
         lambda: ['lambda-function']

@@ -12,15 +12,13 @@ const standardVersion = require('standard-version');
 const manifestFilePath = process.env.GITHUB_WORKSPACE + '/' + config.manifestFile;
 const manifest = JSON.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
 
-function getPreReleaseType(ref) {
 
-    let preReleaseType = null;
+function getPreReleaseType(metadata) {
 
     for (const k in config.preReleaseTypes) {
-        if (config.preReleaseTypes.hasOwnProperty(k)) preReleaseType = ref.match(config.preReleaseTypes[k].branchPattern) ? k : preReleaseType;
+        if (config.preReleaseTypes.hasOwnProperty(k) && metadata.TARGET_BRANCH.match(config.preReleaseTypes[k].branchPattern)) return  k;
     }
 
-    return preReleaseType
 }
 
 function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
@@ -31,10 +29,8 @@ function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
         else t in typeCollection && matches.push(t);
     }
 
-    if (matches.length === 1) {
-        core.info('Project ' + type + ': ' + matches[0]);
-        return matches[0]
-    } else if (matches.length === 0) required && core.setFailed('Project missing ' + type + ' topic');
+    if (matches.length === 1) return matches[0];
+    else if (matches.length === 0) required && core.setFailed('Project missing ' + type + ' topic');
     else core.setFailed('Project has multiple ' + type + ' topics [' + matches.join(' ') + ']');
 
 }
@@ -133,15 +129,16 @@ let standardVersionArgv = {
     gitTagFallback: false
 };
 
-metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.legacyPattern);
-metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
+metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.customBranches.legacy.branchPattern);
+metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.customBranches.hotfix.branchPattern);
+
+metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata);
 
 if (metadata.PRE_RELEASE_TYPE) standardVersionArgv.prerelease = metadata.PRE_RELEASE_TYPE;
-else metadata.VALIDATED_VERSION = manifest.version;
 
 standardVersion(standardVersionArgv).then(() => {
 
-    metadata.PROJECT_VERSION = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE + '/' + config.manifestFile, 'utf-8')).version;
+    metadata.PROJECT_VERSION = JSON.parse(fs.readFileSync(manifestFilePath, 'utf-8')).version;
 
     // Fetch project topics from GitHub
     let gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
@@ -161,10 +158,6 @@ standardVersion(standardVersionArgv).then(() => {
     metadata.TEAM = getMetadataFromTopics('team', config.teams, projectTopics, true);
     metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreters, projectTopics, true);
     metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateClasses(), projectTopics, true);
-    metadata.MAESTRO_REPOSITORY = config.teams[metadata.TEAM].repository;
-    metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
-
-    validateVersion(metadata);
 
     switch(getClassGrouping(metadata.PROJECT_CLASS)) {
 
@@ -172,8 +165,8 @@ standardVersion(standardVersionArgv).then(() => {
 
             if (metadata.INTERPRETER === 'python') {
 
-                let pypiUrl = 'https://' + core.getInput('pypi_host') + '/simple/' + metadata.PROJECT_NAME + '/json';
-                let pypiHeaders = buildBasicAuthHeader(core.getInput('pypi_user'), core.getInput( 'pypi_password'));
+                const pypiUrl = 'https://' + core.getInput('pypi_host') + '/simple/' + metadata.PROJECT_NAME + '/json';
+                const pypiHeaders = buildBasicAuthHeader(core.getInput('pypi_user'), core.getInput( 'pypi_password'));
                 fetch(pypiUrl, {headers: pypiHeaders}).then(response => {
 
                     if (response.status === 200) return response.json();
@@ -196,10 +189,10 @@ standardVersion(standardVersionArgv).then(() => {
 
         case 'helmChart':
 
-            metadata.PROJECT_NAME = metadata.PROJECT_NAME.substring(6);
+            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
 
-            let chartsUrl = 'https://' + core.getInput('chart_repository') +'/api/charts/' + metadata.PROJECT_NAME + '/' + metadata.PROJECT_NAME;
-            let chartsHeaders = buildBasicAuthHeader(core.getInput('chart_repository_user'), core.getInput( 'chart_repository_password'));
+            const chartsUrl = 'https://' + core.getInput('chart_repository') +'/api/charts/' + metadata.PROJECT_NAME + '/' + metadata.PROJECT_NAME;
+            const chartsHeaders = buildBasicAuthHeader(core.getInput('chart_repository_user'), core.getInput( 'chart_repository_password'));
             fetch(chartsUrl, {headers: chartsHeaders , method: 'HEAD'}).then(response => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
@@ -226,7 +219,9 @@ standardVersion(standardVersionArgv).then(() => {
 
         case 'publicImage':
 
-            const imageName = metadata.PROJECT_NAME.substring(3);
+            const imageName = metadata.PROJECT_NAME.replace(/^dk_/, '');
+
+            metadata.DOCKER_BUILD_FROM_MASTER = true;
 
             fetch('https://' + core.getInput('container_registry') + '/v2/' + imageName + '/manifests/' + metadata.PROJECT_VERSION).then(response => {
 
@@ -240,10 +235,17 @@ standardVersion(standardVersionArgv).then(() => {
 
             break;
 
-        case 'privateImage':
+        case 'kubernetesWorkload':
 
-            let registryUrl = 'https://' + core.getInput('container_registry') + '/v2/' + metadata.PROJECT_NAME + '/manifests/' + metadata.PROJECT_VERSION;
-            let registryHeaders = buildBasicAuthHeader(core.getInput('container_registry_user'), core.getInput( 'container_registry_password'));
+            metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            metadata.MAESTRO_REPOSITORY = config.teams[metadata.TEAM].repository;
+            metadata.DOCKER_BUILD_FROM_MASTER = false;
+            if (metadata.TARGET_BRANCH === 'ref/heads/master') metadata.VALIDATED_VERSION = manifest.version;
+
+            validateVersion(metadata);
+
+            const registryUrl = 'https://' + core.getInput('container_registry') + '/v2/' + metadata.PROJECT_NAME + '/manifests/' + metadata.PROJECT_VERSION;
+            const registryHeaders = buildBasicAuthHeader(core.getInput('container_registry_user'), core.getInput( 'container_registry_password'));
             fetch(registryUrl, {headers: registryHeaders}).then(response => {
 
                 metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
