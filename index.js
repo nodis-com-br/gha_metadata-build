@@ -23,7 +23,12 @@ function getPreReleaseType(ref) {
 
 function parseManifestFile(manifestFilePath) {
 
-    return yaml.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
+    try {
+        return yaml.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
+    } catch (e) {
+        core.setFailed(e)
+    }
+
 }
 
 function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
