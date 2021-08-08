@@ -168,14 +168,12 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
         case 'package':
 
             publishMetadata(metadata);
-
             break;
 
         case 'helmChart':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
             publishMetadata(metadata);
-
             break;
 
         case 'publicImage':
@@ -184,7 +182,6 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.public + '/' + metadata.PROJECT_NAME.replace(/^dk_/, '');
             metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
             publishMetadata(metadata);
-
             break;
 
         case 'kubernetesWorkload':
@@ -196,21 +193,17 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
             validateVersion(metadata);
             publishMetadata(metadata);
-
             break;
 
         case 'lambda':
 
-            const functionName = metadata.PROJECT_NAME.substring(3);
-
             metadata.AWS_REGION = process.env.AWS_REGION;
-            metadata.FUNCTION_NAME = functionName;
-            metadata.ARTIFACT_NAME = functionName + '.zip';
-            metadata.ARTIFACT_FULLNAME = functionName + '-' + metadata.PROJECT_VERSION + '.zip';
-            metadata.ARTIFACT_PATH = functionName;
+            metadata.FUNCTION_NAME = metadata.PROJECT_NAME.substring(3);
+            metadata.ARTIFACT_NAME = metadata.FUNCTION_NAME + '.zip';
+            metadata.ARTIFACT_FULLNAME = metadata.FUNCTION_NAME + '-' + metadata.PROJECT_VERSION + '.zip';
+            metadata.ARTIFACT_PATH = metadata.FUNCTION_NAME;
             metadata.ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + metadata.AWS_REGION;
             publishMetadata(metadata);
-
             break;
 
         case 'webapp':
@@ -220,7 +213,6 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.WEBAPP_BUCKET = config.webappBucketPrefix + '-' + metadata.PROJECT_NAME;
             metadata.SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
             publishMetadata(metadata);
-
             break;
 
         default:

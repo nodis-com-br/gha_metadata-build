@@ -9,7 +9,7 @@ inputs:
     required: true
   gh_global_token:
     description: ''
-    required: true
+    required: false
   skip_bump:
     description: ''
     required: false
