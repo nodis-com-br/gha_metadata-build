@@ -1,9 +1,15 @@
+const standardVersionYamlUpdater = require.resolve('standard-version-updater-yaml');
+const standardVersionJsonUpdater = require('standard-version/lib/updaters/types/json');
+
 module.exports = {
-    manifestFile: "manifest.json",
     versionConflictMessage: "Version already exists in repository",
     webappsArtifactBucket: 'nodis-webapp',
     webappBucketPrefix: 'nodis-web',
     lambdaBucketPrefix: 'nodis-lambda',
+    containerRegistry: {
+        public: 'docker.io/nodisbr',
+        private: 'registry.nodis.com.br'
+    },
     preReleaseTypes: {
         dev: {
             branchPattern: /^refs\/heads\/develop$/,
@@ -60,12 +66,36 @@ module.exports = {
         }
     },
     interpreters: ['python', 'nodejs', 'shell', 'docker', 'helm'],
-    projectClasses: {
-        package: ['library', 'python-app'],
-        kubernetesWorkload: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
-        publicImage: ['public-image'],
-        webapp: ['react-app'],
-        helmChart: ['helm-chart'],
-        lambda: ['lambda-function']
+    projectGroups: {
+        package: {
+            topics: ['library', 'python-app'],
+            manifestFile: 'manifest.json',
+            updater: standardVersionJsonUpdater
+        },
+        kubernetesWorkload: {
+            topics: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
+            manifestFile: 'manifest.json',
+            updater: standardVersionJsonUpdater
+        } ,
+        publicImage: {
+            topics: ['public-image'],
+            manifestFile: 'manifest.json',
+            updater: standardVersionJsonUpdater
+        },
+        helmChart:  {
+            topics: ['helm-chart'],
+            manifestFile: 'Chart.yaml',
+            updater: standardVersionYamlUpdater
+        },
+        webapp:  {
+            topics: ['react-app'],
+            manifestFile: 'manifest.json',
+            updater: standardVersionJsonUpdater
+        },
+        lambda:  {
+            topics: ['lambda-function'],
+            manifestFile: 'manifest.json',
+            updater: standardVersionJsonUpdater
+        }
     }
 };

@@ -1,24 +1,29 @@
-require('dotenv').config();
 const core = require('@actions/core');
 const artifact = require('@actions/artifact');
 const fs = require('fs');
+const yaml = require('yaml');
 const fetch = require('node-fetch');
-const base64 = require('base-64');
-const AWS = require('aws-sdk');
 const config = require('./config.js');
 const process = require('process');
 const standardVersion = require('standard-version');
+const standardVersionDockerfileUpdater = require('@damlys/standard-version-updater-docker/dist/dockerfile.js');
+const standardVersionDockerComposeUpdater = require('@damlys/standard-version-updater-docker/dist/docker-compose.js');
 
-const manifestFilePath = process.env.GITHUB_WORKSPACE + '/' + config.manifestFile;
-const manifest = JSON.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
+// Load .env file for local testing
+require('dotenv').config();
 
 
-function getPreReleaseType(metadata) {
+function getPreReleaseType(ref) {
 
     for (const k in config.preReleaseTypes) {
-        if (config.preReleaseTypes.hasOwnProperty(k) && metadata.TARGET_BRANCH.match(config.preReleaseTypes[k].branchPattern)) return  k;
+        if (config.preReleaseTypes.hasOwnProperty(k) && ref.match(config.preReleaseTypes[k].branchPattern)) return  k;
     }
 
+}
+
+function parseManifestFile(manifestFilePath) {
+
+    return yaml.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
 }
 
 function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
@@ -35,49 +40,33 @@ function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
 
 }
 
-function aggregateClasses() {
+function aggregateProjectTypes() {
 
     let classArray = [];
 
-    for (const k in config.projectClasses) {
-        if (config.projectClasses.hasOwnProperty(k)) classArray = classArray.concat(config.projectClasses[k])
+    for (const k in config.projectGroups) {
+        if (config.projectGroups.hasOwnProperty(k)) classArray = classArray.concat(config.projectGroups[k].topics)
     }
 
     return classArray
 }
 
-function getClassGrouping(projectClass) {
+function getProjectGroup(projectType) {
 
-    for (const k in config.projectClasses) {
-        if (config.projectClasses.hasOwnProperty(k) && config.projectClasses[k].includes(projectClass)) return k
+    for (const k in config.projectGroups) {
+        if (config.projectGroups.hasOwnProperty(k) && config.projectGroups[k].topics.includes(projectType)) return k
     }
 }
 
-function buildBasicAuthHeader(user, password) {
-    return {Authorization: 'Basic ' + base64.encode(user + ':' + password)};
-}
-
-function verifyArtifactOnS3(metadata) {
-
-    const s3 = new AWS.S3({apiVersion: '2006-03-01'});
-
-    let bucketParam = {
-        Bucket: metadata.ARTIFACT_BUCKET,
-        Key: metadata.ARTIFACT_PATH + '/' + metadata.ARTIFACT_FULLNAME
-    };
-
-    s3.headObject(bucketParam, function(err) {
-        metadata.SKIP_VERSION_VALIDATION || err || core.setFailed(config.versionConflictMessage);
-        publishMetadata(metadata, manifest);
-    });
-}
-
-function publishMetadata(metadata, manifest) {
+function publishMetadata(metadata) {
 
     const artifactClient = artifact.create();
+    const manifest = parseManifestFile(metadata.MANIFEST_FILE, 'utf-8');
 
-    if ('overrides' in manifest) {
-        for (const k in manifest.overrides) if (manifest.overrides.hasOwnProperty(k)) metadata[k] = manifest.overrides[k];
+    for (const k in ['overrides', 'annotations']) {
+        if (k in manifest) {
+            for (const j in manifest[k]) if (manifest[k].hasOwnProperty(j)) metadata[j] = manifest[k][j];
+        }
     }
 
     fs.writeFileSync('./metadata.json', JSON.stringify(metadata, null, 2));
@@ -112,40 +101,20 @@ function validateVersion(metadata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
-
 let metadata = {
     SKIP_BUMP: core.getBooleanInput('skip_bump'),
     SKIP_VERSION_VALIDATION: core.getBooleanInput('skip_version_validation'),
-    SKIP_TESTS: manifest['skip_tests'],
     PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
     TARGET_BRANCH: process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF,
 };
 
-let standardVersionArgv = {
-    packageFiles: [manifestFilePath],
-    silent: metadata.SKIP_BUMP,
-    dryRun: metadata.SKIP_BUMP,
-    gitTagFallback: false
-};
-
+metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.customBranches.legacy.branchPattern);
 metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.customBranches.hotfix.branchPattern);
 
-metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata);
-
-if (metadata.PRE_RELEASE_TYPE) standardVersionArgv.prerelease = metadata.PRE_RELEASE_TYPE;
-
-standardVersion(standardVersionArgv).then(() => {
-
-    metadata.PROJECT_VERSION = JSON.parse(fs.readFileSync(manifestFilePath, 'utf-8')).version;
-
-    // Fetch project topics from GitHub
-    let gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
-    let gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
-    return fetch(gitHubUrl, {headers: gitHubHeaders})
-
-}).then(response => {
+const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
+const gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
+fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     if (response['status'] === 200) return response['json']();
     else throw ['Could not retrieve topics:', response['status'], response['statusText']].join(' ')
@@ -153,49 +122,80 @@ standardVersion(standardVersionArgv).then(() => {
 }).then(response => {
 
     const projectTopics = response['names'];
-
-    // Validate project topics
     metadata.TEAM = getMetadataFromTopics('team', config.teams, projectTopics, true);
     metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreters, projectTopics, true);
-    metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateClasses(), projectTopics, true);
+    metadata.PROJECT_TYPE = getMetadataFromTopics('group', aggregateProjectTypes(), projectTopics, true);
+    metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_TYPE);
+    metadata.MANIFEST_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroups[metadata.PROJECT_GROUP].manifestFile;
 
-    switch(getClassGrouping(metadata.PROJECT_CLASS)) {
+    const manifest = parseManifestFile(metadata.MANIFEST_FILE, 'utf-8');
+    metadata.SKIP_TESTS = manifest['skip_tests'];
+    metadata.PRE_BUMP_VERSION = manifest['version'];
+
+    let standardVersionArgv = {
+        packageFiles: [
+            {
+                filename: metadata.MANIFEST_FILE,
+                updater: config.projectGroups[metadata.PROJECT_GROUP].updater
+            }
+        ],
+        bumpFiles: [
+            {
+                filename: "Dockerfile",
+                updater: standardVersionDockerfileUpdater
+            },
+            {
+                filename: "docker-compose.yml",
+                updater: standardVersionDockerComposeUpdater
+            }
+        ],
+        silent: metadata.SKIP_BUMP,
+        dryRun: metadata.SKIP_BUMP,
+        gitTagFallback: false,
+     };
+
+    if (metadata.PRE_RELEASE_TYPE) standardVersionArgv.prerelease = metadata.PRE_RELEASE_TYPE;
+
+    return standardVersion(standardVersionArgv)
+
+}).then(() => {
+
+    metadata.PROJECT_VERSION = parseManifestFile(metadata.MANIFEST_FILE, 'utf-8').version;
+
+
+    switch(getProjectGroup(metadata.PROJECT_TYPE)) {
 
         case 'package':
 
-            if (metadata.INTERPRETER === 'python') {
-
-                const pypiUrl = 'https://' + core.getInput('pypi_host') + '/simple/' + metadata.PROJECT_NAME + '/json';
-                const pypiHeaders = buildBasicAuthHeader(core.getInput('pypi_user'), core.getInput( 'pypi_password'));
-                fetch(pypiUrl, {headers: pypiHeaders}).then(response => {
-
-                    if (response.status === 200) return response.json();
-                    else if (response.status === 404) return {releases: []};
-                    else core.setFailed('Could not retrieve pypi package versions: ' + response.status + ' ' + response.statusText)
-
-                }).then(response => {
-
-                    if (!metadata.SKIP_VERSION_VALIDATION && metadata.PROJECT_VERSION in response['releases']) core.setFailed(config['versionConflictMessage']);
-                    publishMetadata(metadata, manifest)
-
-                }).catch(error => core.setFailed(error))
-
-            }
+            publishMetadata(metadata);
 
             break;
 
         case 'helmChart':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
+            publishMetadata(metadata);
 
-            const chartsUrl = 'https://' + core.getInput('chart_repository') +'/api/charts/' + metadata.PROJECT_NAME + '/' + metadata.PROJECT_NAME;
-            const chartsHeaders = buildBasicAuthHeader(core.getInput('chart_repository_user'), core.getInput( 'chart_repository_password'));
-            fetch(chartsUrl, {headers: chartsHeaders , method: 'HEAD'}).then(response => {
+            break;
 
-                metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                publishMetadata(metadata, manifest)
+        case 'publicImage':
 
-            }).catch(error => core.setFailed(error));
+            metadata.DOCKER_BUILD_FROM_MASTER = true;
+            metadata.DOCKER_IMAGE_NAME = config.containerRegistry.public + '/' + metadata.PROJECT_NAME.replace(/^dk_/, '');
+            metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
+            publishMetadata(metadata);
+
+            break;
+
+        case 'kubernetesWorkload':
+
+            metadata.DOCKER_BUILD_FROM_MASTER = false;
+            metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            metadata.MAESTRO_REPOSITORY = config.teams[metadata.TEAM].repository;
+            metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
+            metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
+            validateVersion(metadata);
+            publishMetadata(metadata);
 
             break;
 
@@ -209,49 +209,7 @@ standardVersion(standardVersionArgv).then(() => {
             metadata.ARTIFACT_FULLNAME = functionName + '-' + metadata.PROJECT_VERSION + '.zip';
             metadata.ARTIFACT_PATH = functionName;
             metadata.ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + metadata.AWS_REGION;
-
-            verifyArtifactOnS3(metadata);
-
-            break;
-
-        case 'publicImage':
-
-            const imageName = metadata.PROJECT_NAME.replace(/^dk_/, '');
-
-            metadata.DOCKER_BUILD_FROM_MASTER = true;
-
-            fetch('https://' + core.getInput('container_registry') + '/v2/' + imageName + '/manifests/' + metadata.PROJECT_VERSION).then(response => {
-
-                metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry') + '/' + imageName;
-                metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
-
-                publishMetadata(metadata, manifest)
-
-            }).catch(error => core.setFailed(error));
-
-            break;
-
-        case 'kubernetesWorkload':
-
-            metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
-            metadata.MAESTRO_REPOSITORY = config.teams[metadata.TEAM].repository;
-            metadata.DOCKER_BUILD_FROM_MASTER = false;
-            if (metadata.TARGET_BRANCH === 'ref/heads/master') metadata.VALIDATED_VERSION = manifest.version;
-
-            validateVersion(metadata);
-
-            const registryUrl = 'https://' + core.getInput('container_registry') + '/v2/' + metadata.PROJECT_NAME + '/manifests/' + metadata.PROJECT_VERSION;
-            const registryHeaders = buildBasicAuthHeader(core.getInput('container_registry_user'), core.getInput( 'container_registry_password'));
-            fetch(registryUrl, {headers: registryHeaders}).then(response => {
-
-                metadata.SKIP_VERSION_VALIDATION || response.status === 200 && core.setFailed(config.versionConflictMessage);
-                metadata.DOCKER_IMAGE_NAME = core.getInput('container_registry') + '/' + metadata.PROJECT_NAME;
-                metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
-
-                publishMetadata(metadata, manifest)
-
-            }).catch(error => core.setFailed(error));
+            publishMetadata(metadata);
 
             break;
 
@@ -261,14 +219,13 @@ standardVersion(standardVersionArgv).then(() => {
             metadata.ARTIFACT_BUCKET = config.webappsArtifactBucket;
             metadata.WEBAPP_BUCKET = config.webappBucketPrefix + '-' + metadata.PROJECT_NAME;
             metadata.SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
-
-            verifyArtifactOnS3(metadata);
+            publishMetadata(metadata);
 
             break;
 
         default:
 
-            core.setFailed('Could not build environment variables for ' + metadata.PROJECT_CLASS + '/' + metadata.INTERPRETER);
+            core.setFailed('Could not build environment variables for ' + metadata.PROJECT_TYPE + '/' + metadata.INTERPRETER);
 
     }
 
