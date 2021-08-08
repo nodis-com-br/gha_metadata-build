@@ -175,10 +175,7 @@ standardVersion(standardVersionArgv).then(() => {
 
                 }).then(response => {
 
-                    if (!metadata.SKIP_VERSION_VALIDATION && metadata.PROJECT_VERSION in response['releases']) {
-                        core.setFailed(config['versionConflictMessage'])
-                    }
-
+                    if (!metadata.SKIP_VERSION_VALIDATION && metadata.PROJECT_VERSION in response['releases']) core.setFailed(config['versionConflictMessage']);
                     publishMetadata(metadata, manifest)
 
                 }).catch(error => core.setFailed(error))
