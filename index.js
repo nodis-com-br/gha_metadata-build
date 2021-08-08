@@ -128,7 +128,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_TYPE);
     metadata.MANIFEST_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroups[metadata.PROJECT_GROUP].manifestFile;
 
-    core.info('Metadata: ' + JSON.stringify(metadata, null, 4));
+    console.log('Metadata: ' + JSON.stringify(metadata, null, 4));
 
     const manifest = parseManifestFile(metadata.MANIFEST_FILE, 'utf-8');
     metadata.SKIP_TESTS = manifest['skip_tests'];
