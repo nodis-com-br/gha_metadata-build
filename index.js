@@ -112,6 +112,8 @@ metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.customBranches.legacy.branchPattern);
 metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.customBranches.hotfix.branchPattern);
 
+console.log(JSON.stringify(metadata, null, 4));
+
 const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
 const gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
 fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
@@ -128,7 +130,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_TYPE);
     metadata.MANIFEST_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroups[metadata.PROJECT_GROUP].manifestFile;
 
-    console.log('Metadata: ' + JSON.stringify(metadata, null, 4));
+    console.log(JSON.stringify(metadata, null, 4));
 
     const manifest = parseManifestFile(metadata.MANIFEST_FILE, 'utf-8');
     metadata.SKIP_TESTS = manifest['skip_tests'];
