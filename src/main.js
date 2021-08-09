@@ -142,7 +142,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     let standardVersionArgv = {
         packageFiles: [
             {
-                filename: "Charts.yaml",
+                filename: metadata.PACKAGE_FILE,
                 updater: standardVersionYamlUpdater
             }
         ],
