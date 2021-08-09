@@ -1,3 +1,5 @@
+const standardVersionYamlUpdater = require('standard-version-updater-yaml')
+
 module.exports = {
     webappsArtifactBucket: 'nodis-webapp',
     webappBucketPrefix: 'nodis-web',
@@ -6,7 +8,7 @@ module.exports = {
         public: 'docker.io/nodisbr',
         private: 'registry.nodis.com.br'
     },
-    preReleaseTypes: {
+    preReleaseType: {
         dev: {
             branchPattern: /^refs\/heads\/develop$/,
             environment: 'dev'
@@ -16,7 +18,7 @@ module.exports = {
             environment: 'quality'
         },
     },
-    customBranches: {
+    customBranch: {
         legacy: {
             branchPattern: /^refs\/heads\/legacy\/.+$/
         },
@@ -25,7 +27,7 @@ module.exports = {
             environment: 'quality'
         }
     },
-    environments: {
+    environment: {
         dev: {
             versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/
         },
@@ -39,7 +41,7 @@ module.exports = {
             versionPattern: /^\d+\.\d+\.\d+$/
         }
     },
-    teams: {
+    team: {
         devback: {
             repository: 'maestro_devback',
             environment: 'prod'
@@ -61,8 +63,8 @@ module.exports = {
             environment: 'catalog'
         }
     },
-    interpreters: ['python', 'nodejs', 'shell', 'docker', 'helm'],
-    projectGroups: {
+    interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm'],
+    projectGroup: {
         package: {
             topics: ['library', 'python-app'],
             packageFile: 'manifest.json',
@@ -81,7 +83,7 @@ module.exports = {
         helmChart:  {
             topics: ['helm-chart'],
             packageFile: 'Chart.yaml',
-            updaterFunction: require('standard-version-updater-yaml')
+            updaterFunction: standardVersionYamlUpdater
         },
         webapp:  {
             topics: ['react-app'],
