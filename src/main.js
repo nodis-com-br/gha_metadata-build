@@ -69,7 +69,8 @@ function publishMetadata(metadata) {
     const artifactClient = artifact.create();
     const packageFile = parseManifestFile(metadata.PACKAGE_FILE, 'utf-8');
 
-    for (const k in ['overrides', 'annotations']) {
+    for (const i in config.packageOverrideKeys) {
+        const k = config.packageOverrideKeys[i];
         if (k in packageFile) {
             for (const j in packageFile[k]) if (packageFile[k].hasOwnProperty(j)) metadata[j] = packageFile[k][j];
         }
@@ -139,7 +140,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.SKIP_TESTS = packageFileContent['skip_tests'];
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
 
-    let packageFileDef = {filename: metadata.PACKAGE_FILE};
+    const packageFileDef = {filename: metadata.PACKAGE_FILE};
     if ('updaterFunction' in config.projectGroup[metadata.PROJECT_GROUP]) packageFileDef.updater = config.projectGroup[metadata.PROJECT_GROUP].updaterFunction;
     else if ('updaterType' in config.projectGroup[metadata.PROJECT_GROUP]) packageFileDef.type = config.projectGroup[metadata.PROJECT_GROUP].updaterType;
 

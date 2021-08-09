@@ -8,6 +8,10 @@ module.exports = {
         public: 'docker.io/nodisbr',
         private: 'registry.nodis.com.br'
     },
+    packageOverrideKeys: [
+        "overrides",
+        "annotations"
+    ],
     preReleaseType: {
         dev: {
             branchPattern: /^refs\/heads\/develop$/,
