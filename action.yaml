@@ -2,7 +2,7 @@ name: 'metadata-build'
 description: ''
 runs:
   using: 'node12'
-  main: 'dist/main.js'
+  main: 'dist/index.js'
 inputs:
   github_token:
     description: ''
