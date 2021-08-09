@@ -142,7 +142,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
         packageFiles: [
             {
                 filename: metadata.MANIFEST_FILE,
-                updater: config.projectGroups[metadata.PROJECT_GROUP].updater
+                updater: require('standard-version-updater-yaml')
             }
         ],
         bumpFiles: [

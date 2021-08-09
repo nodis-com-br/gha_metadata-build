@@ -1,6 +1,3 @@
-const standardVersionYamlUpdater = require('standard-version-updater-yaml');
-const standardVersionJsonUpdater = require('standard-version/lib/updaters/types/json');
-
 module.exports = {
     versionConflictMessage: "Version already exists in repository",
     webappsArtifactBucket: 'nodis-webapp',
@@ -70,32 +67,32 @@ module.exports = {
         package: {
             topics: ['library', 'python-app'],
             manifestFile: 'manifest.json',
-            updater: standardVersionJsonUpdater
+            // updater: standardVersionJsonUpdater
         },
         kubernetesWorkload: {
             topics: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
             manifestFile: 'manifest.json',
-            updater: standardVersionJsonUpdater
+            // updater: standardVersionJsonUpdater
         } ,
         publicImage: {
             topics: ['public-image'],
             manifestFile: 'manifest.json',
-            updater: standardVersionJsonUpdater
+            // updater: standardVersionJsonUpdater
         },
         helmChart:  {
             topics: ['helm-chart'],
             manifestFile: 'Chart.yaml',
-            updater: standardVersionYamlUpdater
+            // updater: standardVersionYamlUpdater
         },
         webapp:  {
             topics: ['react-app'],
             manifestFile: 'manifest.json',
-            updater: standardVersionJsonUpdater
+            // updater: standardVersionJsonUpdater
         },
         lambda:  {
             topics: ['lambda-function'],
             manifestFile: 'manifest.json',
-            updater: standardVersionJsonUpdater
+            // updater: standardVersionJsonUpdater
         }
     }
 };
