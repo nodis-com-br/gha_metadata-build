@@ -1,7 +1,7 @@
 const core = require('@actions/core');
 const artifact = require('@actions/artifact');
 const fs = require('fs');
-const yaml = require('yaml');
+const yamlParser = require('yaml');
 const fetch = require('node-fetch');
 const config = require('./config.js');
 const process = require('process');
@@ -24,7 +24,7 @@ function getPreReleaseType(ref) {
 function parseManifestFile(manifestFilePath) {
 
     try {
-        return yaml.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
+        return yamlParser.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
     } catch (e) {
         core.setFailed(e)
     }
@@ -117,8 +117,6 @@ metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.customBranches.legacy.branchPattern);
 metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.customBranches.hotfix.branchPattern);
 
-console.log(JSON.stringify(metadata, null, 4));
-
 const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
 const gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
 fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
@@ -135,7 +133,6 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_TYPE);
     metadata.MANIFEST_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroups[metadata.PROJECT_GROUP].manifestFile;
 
-    console.log(JSON.stringify(metadata, null, 4));
 
     const manifest = parseManifestFile(metadata.MANIFEST_FILE, 'utf-8');
     metadata.SKIP_TESTS = manifest['skip_tests'];

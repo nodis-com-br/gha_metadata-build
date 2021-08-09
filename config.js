@@ -1,4 +1,4 @@
-const standardVersionYamlUpdater = require.resolve('standard-version-updater-yaml');
+const standardVersionYamlUpdater = require('standard-version-updater-yaml');
 const standardVersionJsonUpdater = require('standard-version/lib/updaters/types/json');
 
 module.exports = {
