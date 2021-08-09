@@ -6,9 +6,6 @@ const fetch = require('node-fetch');
 const config = require('./config.js');
 const process = require('process');
 const standardVersion = require('standard-version');
-const standardVersionDockerfileUpdater = require('@damlys/standard-version-updater-docker/dist/dockerfile.js');
-const standardVersionDockerComposeUpdater = require('@damlys/standard-version-updater-docker/dist/docker-compose.js');
-
 // Load .env file for local testing
 require('dotenv').config();
 
@@ -133,26 +130,22 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_TYPE);
     metadata.MANIFEST_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroups[metadata.PROJECT_GROUP].manifestFile;
 
-
+    const packageFile = {filename: metadata.MANIFEST_FILE, updater: require('standard-version-updater-yaml')};
     const manifest = parseManifestFile(metadata.MANIFEST_FILE, 'utf-8');
     metadata.SKIP_TESTS = manifest['skip_tests'];
     metadata.PRE_BUMP_VERSION = manifest['version'];
 
     let standardVersionArgv = {
-        packageFiles: [
-            {
-                filename: metadata.MANIFEST_FILE,
-                updater: require('standard-version-updater-yaml')
-            }
-        ],
+        packageFiles: [packageFile],
         bumpFiles: [
+            packageFile,
             {
                 filename: "Dockerfile",
-                updater: standardVersionDockerfileUpdater
+                updater: require('@damlys/standard-version-updater-docker/dist/dockerfile.js')
             },
             {
                 filename: "docker-compose.yml",
-                updater: standardVersionDockerComposeUpdater
+                updater: require('@damlys/standard-version-updater-docker/dist/docker-compose.js')
             }
         ],
         silent: metadata.SKIP_BUMP,
