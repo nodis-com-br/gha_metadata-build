@@ -1,0 +1,24 @@
+{
+  "name": "build-metadata",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/artifact": "^0.3.5",
+    "@actions/core": "^1.4.0",
+    "@actions/github": "^4.0.0",
+    "@damlys/standard-version-updater-docker": "^1.0.0",
+    "dotenv": "^8.6.0",
+    "fs": "0.0.1-security",
+    "node-fetch": "^2.6.1",
+    "process": "^0.11.10",
+    "standard-version": "^9.3.1",
+    "standard-version-updater-yaml": "^1.0.2",
+    "yaml": "^1.10.2"
+  }
+}
