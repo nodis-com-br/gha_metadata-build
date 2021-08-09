@@ -66,26 +66,32 @@ module.exports = {
         package: {
             topics: ['library', 'python-app'],
             packageFile: 'manifest.json',
+            updaterType: 'json'
         },
         kubernetesWorkload: {
             topics: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
             packageFile: 'manifest.json',
+            updaterType: 'json'
         } ,
         publicImage: {
             topics: ['public-image'],
             packageFile: 'manifest.json',
+            updaterType: 'json'
         },
         helmChart:  {
             topics: ['helm-chart'],
             packageFile: 'Chart.yaml',
+            updaterFunction: require('standard-version-updater-yaml')
         },
         webapp:  {
             topics: ['react-app'],
             packageFile: 'manifest.json',
+            updaterType: 'json'
         },
         lambda:  {
             topics: ['lambda-function'],
             packageFile: 'manifest.json',
+            updaterType: 'json'
         }
     }
 };

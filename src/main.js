@@ -135,22 +135,20 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_TYPE);
     metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroups[metadata.PROJECT_GROUP].packageFile;
 
-    const packageFile = parseManifestFile(metadata.PACKAGE_FILE, 'utf-8');
-    metadata.SKIP_TESTS = packageFile['skip_tests'];
-    metadata.PRE_BUMP_VERSION = packageFile['version'];
+    const packageFileContents = parseManifestFile(metadata.PACKAGE_FILE, 'utf-8');
+    metadata.SKIP_TESTS = packageFileContents['skip_tests'];
+    metadata.PRE_BUMP_VERSION = packageFileContents['version'];
+
+        let packageFileDef = {filename: metadata.PACKAGE_FILE};
+    if ('updaterFunction' in config.projectGroups[metadata.PROJECT_GROUP]) packageFileDef.updater = config.projectGroups[metadata.PROJECT_GROUP].updaterFunction;
+    else if ('updaterType' in config.projectGroups[metadata.PROJECT_GROUP]) packageFileDef.type = config.projectGroups[metadata.PROJECT_GROUP].updaterType;
 
     let standardVersionArgv = {
         packageFiles: [
-            {
-                filename: metadata.PACKAGE_FILE,
-                updater: standardVersionYamlUpdater
-            }
+            packageFileDef
         ],
         bumpFiles: [
-            {
-                filename: "Charts.yml",
-                updater: standardVersionYamlUpdater
-            },
+            packageFileDef,
             {
                 filename: "Dockerfile",
                 updater: standardVersionDockerfileUpdater
