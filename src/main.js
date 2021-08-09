@@ -139,7 +139,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.SKIP_TESTS = packageFileContents['skip_tests'];
     metadata.PRE_BUMP_VERSION = packageFileContents['version'];
 
-        let packageFileDef = {filename: metadata.PACKAGE_FILE};
+    let packageFileDef = {filename: metadata.PACKAGE_FILE};
     if ('updaterFunction' in config.projectGroups[metadata.PROJECT_GROUP]) packageFileDef.updater = config.projectGroups[metadata.PROJECT_GROUP].updaterFunction;
     else if ('updaterType' in config.projectGroups[metadata.PROJECT_GROUP]) packageFileDef.type = config.projectGroups[metadata.PROJECT_GROUP].updaterType;
 
