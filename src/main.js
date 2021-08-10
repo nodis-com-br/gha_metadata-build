@@ -120,12 +120,12 @@ metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.customBranch.legacy.branchPattern);
 metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.customBranch.hotfix.branchPattern);
 
-const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/classes';
+const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
 const gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
 fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     if (response['status'] === 200) return response['json']();
-    else throw ['Could not retrieve classes:', response['status'], response['statusText']].join(' ')
+    else throw ['Could not retrieve topics:', response['status'], response['statusText']].join(' ')
 
 }).then(response => {
 
