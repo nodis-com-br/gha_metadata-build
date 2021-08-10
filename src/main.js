@@ -42,7 +42,7 @@ function getMetadataFromTopics(label, typeCollection, projectTopics, required) {
 
     if (matches.length === 1) return matches[0];
     else if (matches.length === 0) required && core.setFailed('Project missing ' + label + ' topic');
-    else core.setFailed('Project has multiple ' + label + ' classes [' + matches.join(' ') + ']');
+    else core.setFailed('Project has multiple ' + label + ' topics [' + matches.join(' ') + ']');
 
 }
 
