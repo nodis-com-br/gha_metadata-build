@@ -159,6 +159,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
                 updater: standardVersionDockerComposeUpdater
             }
         ],
+        firstRelease: core.getBooleanInput('first_release'),
         silent: metadata.SKIP_BUMP,
         dryRun: metadata.SKIP_BUMP,
         gitTagFallback: false,
