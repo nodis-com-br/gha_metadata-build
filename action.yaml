@@ -18,6 +18,10 @@ inputs:
     description: ''
     required: false
     default: 'false'
+  first_release:
+    description: ''
+    required: false
+    default: 'false'
   pypi_host:
     description: ''
     required: false

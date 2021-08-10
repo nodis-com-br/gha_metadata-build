@@ -22,7 +22,7 @@ function getPreReleaseType(ref) {
 
 }
 
-function parseManifestFile(manifestFilePath) {
+function parsePackageFile(manifestFilePath) {
 
     try {
         return yamlParser.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
@@ -67,7 +67,7 @@ function getProjectGroup(projectType) {
 function publishMetadata(metadata) {
 
     const artifactClient = artifact.create();
-    const packageFile = parseManifestFile(metadata.PACKAGE_FILE, 'utf-8');
+    const packageFile = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
 
     for (const i in config.packageOverrideKeys) {
         const k = config.packageOverrideKeys[i];
@@ -132,11 +132,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     const projectTopics = response['names'];
     metadata.TEAM = getMetadataFromTopics('team', config.team, projectTopics, true);
     metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreter, projectTopics, true);
-    metadata.PROJECT_TYPE = getMetadataFromTopics('group', aggregateProjectTypes(), projectTopics, true);
-    metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_TYPE);
+    metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectTypes(), projectTopics, true);
+    metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_CLASS);
     metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroup[metadata.PROJECT_GROUP].packageFile;
 
-    const packageFileContent = parseManifestFile(metadata.PACKAGE_FILE, 'utf-8');
+    const packageFileContent = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
     metadata.SKIP_TESTS = packageFileContent['skip_tests'];
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
 
@@ -170,9 +170,9 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
 }).then(() => {
 
-    metadata.PROJECT_VERSION = parseManifestFile(metadata.PACKAGE_FILE, 'utf-8').version;
+    metadata.PROJECT_VERSION = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8').version;
 
-    switch(getProjectGroup(metadata.PROJECT_TYPE)) {
+    switch(getProjectGroup(metadata.PROJECT_CLASS)) {
 
         case 'package':
 
@@ -226,7 +226,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
         default:
 
-            core.setFailed('Could not build environment variables for ' + metadata.PROJECT_TYPE + '/' + metadata.INTERPRETER);
+            core.setFailed('Could not build environment variables for ' + metadata.PROJECT_CLASS + '/' + metadata.INTERPRETER);
 
     }
 

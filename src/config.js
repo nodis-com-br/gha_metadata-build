@@ -1,4 +1,4 @@
-const standardVersionYamlUpdater = require('standard-version-updater-yaml')
+const standardVersionYamlUpdater = require('standard-version-updater-yaml');
 
 module.exports = {
     webappsArtifactBucket: 'nodis-webapp',
