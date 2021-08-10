@@ -70,32 +70,32 @@ module.exports = {
     interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm'],
     projectGroup: {
         package: {
-            topics: ['library', 'python-app'],
+            classes: ['library', 'python-app'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         },
         kubernetesWorkload: {
-            topics: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
+            classes: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         } ,
         publicImage: {
-            topics: ['public-image'],
+            classes: ['public-image'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         },
         helmChart:  {
-            topics: ['helm-chart'],
+            classes: ['helm-chart'],
             packageFile: 'Chart.yaml',
             updaterFunction: standardVersionYamlUpdater
         },
         webapp:  {
-            topics: ['react-app'],
+            classes: ['react-app'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         },
         lambda:  {
-            topics: ['lambda-function'],
+            classes: ['lambda-function'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         }

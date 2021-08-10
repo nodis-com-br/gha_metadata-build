@@ -32,7 +32,7 @@ function parsePackageFile(manifestFilePath) {
 
 }
 
-function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
+function getMetadataFromTopics(label, typeCollection, projectTopics, required) {
 
     let matches = [];
     for (const t of projectTopics) {
@@ -41,17 +41,17 @@ function getMetadataFromTopics(type, typeCollection, projectTopics, required) {
     }
 
     if (matches.length === 1) return matches[0];
-    else if (matches.length === 0) required && core.setFailed('Project missing ' + type + ' topic');
-    else core.setFailed('Project has multiple ' + type + ' topics [' + matches.join(' ') + ']');
+    else if (matches.length === 0) required && core.setFailed('Project missing ' + label + ' topic');
+    else core.setFailed('Project has multiple ' + label + ' classes [' + matches.join(' ') + ']');
 
 }
 
-function aggregateProjectTypes() {
+function aggregateProjectClasses() {
 
     let classArray = [];
 
     for (const k in config.projectGroup) {
-        if (config.projectGroup.hasOwnProperty(k)) classArray = classArray.concat(config.projectGroup[k].topics)
+        if (config.projectGroup.hasOwnProperty(k)) classArray = classArray.concat(config.projectGroup[k].classes)
     }
 
     return classArray
@@ -60,7 +60,7 @@ function aggregateProjectTypes() {
 function getProjectGroup(projectType) {
 
     for (const k in config.projectGroup) {
-        if (config.projectGroup.hasOwnProperty(k) && config.projectGroup[k].topics.includes(projectType)) return k
+        if (config.projectGroup.hasOwnProperty(k) && config.projectGroup[k].classes.includes(projectType)) return k
     }
 }
 
@@ -120,19 +120,19 @@ metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.customBranch.legacy.branchPattern);
 metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.customBranch.hotfix.branchPattern);
 
-const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
+const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/classes';
 const gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
 fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     if (response['status'] === 200) return response['json']();
-    else throw ['Could not retrieve topics:', response['status'], response['statusText']].join(' ')
+    else throw ['Could not retrieve classes:', response['status'], response['statusText']].join(' ')
 
 }).then(response => {
 
     const projectTopics = response['names'];
     metadata.TEAM = getMetadataFromTopics('team', config.team, projectTopics, true);
     metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreter, projectTopics, true);
-    metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectTypes(), projectTopics, true);
+    metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectClasses(), projectTopics, true);
     metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_CLASS);
     metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroup[metadata.PROJECT_GROUP].packageFile;
 
