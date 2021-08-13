@@ -57,10 +57,10 @@ function aggregateProjectClasses() {
     return classArray
 }
 
-function getProjectGroup(projectType) {
+function getProjectGroup(projectClass) {
 
     for (const k in config.projectGroup) {
-        if (config.projectGroup.hasOwnProperty(k) && config.projectGroup[k].classes.includes(projectType)) return k
+        if (config.projectGroup.hasOwnProperty(k) && config.projectGroup[k].classes.includes(projectClass)) return k
     }
 }
 
@@ -88,10 +88,9 @@ function publishMetadata(metadata) {
 
 function getDeployEnvironment(metadata) {
 
-    const environment = metadata.PRE_RELEASE_TYPE ? config.preReleaseType[metadata.PRE_RELEASE_TYPE].environment : config.team[metadata.TEAM].environment;
-
-    if (environment) return environment;
-    else core.setFailed(['Deployment environment not found:', metadata.TARGET_BRANCH, '/', metadata.PROJECT_VERSION].join(' '));
+    if (metadata.PRE_RELEASE_TYPE) return config.preReleaseType[metadata.PRE_RELEASE_TYPE].environment;
+    else if (metadata.HOTFIX) return config.customBranch.hotfix.environment;
+    else return config.team[metadata.TEAM].environment;
 
 }
 
@@ -141,7 +140,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
 
     const packageFileDef = {filename: metadata.PACKAGE_FILE};
-    if ('updaterFunction' in config.projectGroup[metadata.PROJECT_GROUP]) packageFileDef.updater = config.projectGroup[metadata.PROJECT_GROUP].updaterFunction;
+    if ('updaterModule' in config.projectGroup[metadata.PROJECT_GROUP]) packageFileDef.updater = config.projectGroup[metadata.PROJECT_GROUP].updaterModule;
     else if ('updaterType' in config.projectGroup[metadata.PROJECT_GROUP]) packageFileDef.type = config.projectGroup[metadata.PROJECT_GROUP].updaterType;
 
     let standardVersionArgv = {
@@ -177,13 +176,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
         case 'package':
 
-            publishMetadata(metadata);
             break;
 
         case 'helmChart':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
-            publishMetadata(metadata);
             break;
 
         case 'publicImage':
@@ -191,7 +188,6 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.DOCKER_BUILD_FROM_MASTER = true;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.public + '/' + metadata.PROJECT_NAME.replace(/^dk_/, '');
             metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
-            publishMetadata(metadata);
             break;
 
         case 'kubernetesWorkload':
@@ -201,8 +197,10 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.MAESTRO_REPOSITORY = config.team[metadata.TEAM].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
+            if (metadata.TARGET_BRANCH.match(config.masterBranchPattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
+                metadata.VALIDATED_VERSION = metadata.PRE_BUMP_VERSION
+            }
             validateVersion(metadata);
-            publishMetadata(metadata);
             break;
 
         case 'lambda':
@@ -213,7 +211,6 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.ARTIFACT_FULLNAME = metadata.FUNCTION_NAME + '-' + metadata.PROJECT_VERSION + '.zip';
             metadata.ARTIFACT_PATH = metadata.FUNCTION_NAME;
             metadata.ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + metadata.AWS_REGION;
-            publishMetadata(metadata);
             break;
 
         case 'webapp':
@@ -222,13 +219,15 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.ARTIFACT_BUCKET = config.webappsArtifactBucket;
             metadata.WEBAPP_BUCKET = config.webappBucketPrefix + '-' + metadata.PROJECT_NAME;
             metadata.SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
-            publishMetadata(metadata);
+
             break;
 
         default:
 
-            core.setFailed('Could not build environment variables for ' + metadata.PROJECT_CLASS + '/' + metadata.INTERPRETER);
+            core.setFailed('Project group not found for ' + metadata.PROJECT_CLASS);
 
     }
+
+    publishMetadata(metadata);
 
 }).catch(error => core.setFailed(error));

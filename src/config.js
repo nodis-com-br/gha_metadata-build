@@ -4,6 +4,7 @@ module.exports = {
     webappsArtifactBucket: 'nodis-webapp',
     webappBucketPrefix: 'nodis-web',
     lambdaBucketPrefix: 'nodis-lambda',
+    masterBranchPattern: /^refs\/heads\/master$/,
     containerRegistry: {
         public: 'docker.io/nodisbr',
         private: 'registry.nodis.com.br'
@@ -87,7 +88,7 @@ module.exports = {
         helmChart:  {
             classes: ['helm-chart'],
             packageFile: 'Chart.yaml',
-            updaterFunction: standardVersionYamlUpdater
+            updaterModule: standardVersionYamlUpdater
         },
         webapp:  {
             classes: ['react-app'],
