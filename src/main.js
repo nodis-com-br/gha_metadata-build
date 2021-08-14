@@ -16,8 +16,8 @@ require('dotenv').config();
 
 function getPreReleaseType(ref) {
 
-    for (const k in config.preReleaseType) {
-        if (config.preReleaseType.hasOwnProperty(k) && ref.match(config.preReleaseType[k].branchPattern)) return  k;
+    for (const k in config.branchType) {
+        if (config.branchType.hasOwnProperty(k) && config.branchType[k].preRelease && ref.match(config.branchType[k].pattern)) return k;
     }
 
 }
@@ -50,17 +50,17 @@ function aggregateProjectClasses() {
 
     let classArray = [];
 
-    for (const k in config.projectGroup) {
-        if (config.projectGroup.hasOwnProperty(k)) classArray = classArray.concat(config.projectGroup[k].classes)
+    for (const k in config.projectWorkflow) {
+        if (config.projectWorkflow.hasOwnProperty(k)) classArray = classArray.concat(config.projectWorkflow[k].classes)
     }
 
     return classArray
 }
 
-function getProjectGroup(projectClass) {
+function getProjectWorkflow(projectClass) {
 
-    for (const k in config.projectGroup) {
-        if (config.projectGroup.hasOwnProperty(k) && config.projectGroup[k].classes.includes(projectClass)) return k
+    for (const k in config.projectWorkflow) {
+        if (config.projectWorkflow.hasOwnProperty(k) && config.projectWorkflow[k].classes.includes(projectClass)) return k
     }
 }
 
@@ -88,8 +88,8 @@ function publishMetadata(metadata) {
 
 function getDeployEnvironment(metadata) {
 
-    if (metadata.PRE_RELEASE_TYPE) return config.preReleaseType[metadata.PRE_RELEASE_TYPE].environment;
-    else if (metadata.HOTFIX) return config.customBranch.hotfix.environment;
+    if (metadata.PRE_RELEASE_TYPE) return config.branchType[metadata.PRE_RELEASE_TYPE].environment;
+    else if (metadata.HOTFIX) return config.branchType.hotfix.environment;
     else return config.team[metadata.TEAM].environment;
 
 }
@@ -116,8 +116,8 @@ let metadata = {
 };
 
 metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
-metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.customBranch.legacy.branchPattern);
-metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.customBranch.hotfix.branchPattern);
+metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.branchType.legacy.pattern);
+metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.branchType.hotfix.pattern);
 
 const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
 const gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
@@ -132,16 +132,16 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.TEAM = getMetadataFromTopics('team', config.team, projectTopics, true);
     metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreter, projectTopics, true);
     metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectClasses(), projectTopics, true);
-    metadata.PROJECT_GROUP = getProjectGroup(metadata.PROJECT_CLASS);
-    metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectGroup[metadata.PROJECT_GROUP].packageFile;
+    metadata.PROJECT_WORKFLOW = getProjectWorkflow(metadata.PROJECT_CLASS);
+    metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectWorkflow[metadata.PROJECT_WORKFLOW].packageFile;
 
     const packageFileContent = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
     metadata.SKIP_TESTS = packageFileContent['skip_tests'];
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
 
     const packageFileDef = {filename: metadata.PACKAGE_FILE};
-    if ('updaterModule' in config.projectGroup[metadata.PROJECT_GROUP]) packageFileDef.updater = config.projectGroup[metadata.PROJECT_GROUP].updaterModule;
-    else if ('updaterType' in config.projectGroup[metadata.PROJECT_GROUP]) packageFileDef.type = config.projectGroup[metadata.PROJECT_GROUP].updaterType;
+    if ('updaterModule' in config.projectWorkflow[metadata.PROJECT_WORKFLOW]) packageFileDef.updater = config.projectWorkflow[metadata.PROJECT_WORKFLOW].updaterModule;
+    else if ('updaterType' in config.projectWorkflow[metadata.PROJECT_WORKFLOW]) packageFileDef.type = config.projectWorkflow[metadata.PROJECT_WORKFLOW].updaterType;
 
     let standardVersionArgv = {
         packageFiles: [
@@ -172,7 +172,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     metadata.PROJECT_VERSION = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8').version;
 
-    switch(getProjectGroup(metadata.PROJECT_CLASS)) {
+    switch(metadata.PROJECT_WORKFLOW) {
 
         case 'package':
 
@@ -197,13 +197,13 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.MAESTRO_REPOSITORY = config.team[metadata.TEAM].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
-            if (metadata.TARGET_BRANCH.match(config.masterBranchPattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
+            if (metadata.TARGET_BRANCH.match(config.branchType.master.pattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
                 metadata.VALIDATED_VERSION = metadata.PRE_BUMP_VERSION
             }
             validateVersion(metadata);
             break;
 
-        case 'lambda':
+        case 'lambdaFunction':
 
             metadata.AWS_REGION = process.env.AWS_REGION;
             metadata.FUNCTION_NAME = metadata.PROJECT_NAME.substring(3);
@@ -224,7 +224,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
         default:
 
-            core.setFailed('Project group not found for ' + metadata.PROJECT_CLASS);
+            core.setFailed('Workflow not found for ' + metadata.PROJECT_CLASS);
 
     }
 

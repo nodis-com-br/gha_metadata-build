@@ -4,7 +4,6 @@ module.exports = {
     webappsArtifactBucket: 'nodis-webapp',
     webappBucketPrefix: 'nodis-web',
     lambdaBucketPrefix: 'nodis-lambda',
-    masterBranchPattern: /^refs\/heads\/master$/,
     containerRegistry: {
         public: 'docker.io/nodisbr',
         private: 'registry.nodis.com.br'
@@ -13,25 +12,6 @@ module.exports = {
         "overrides",
         "annotations"
     ],
-    preReleaseType: {
-        dev: {
-            branchPattern: /^refs\/heads\/develop$/,
-            environment: 'dev'
-        },
-        rc: {
-            branchPattern: /^refs\/heads\/release\/.+$/,
-            environment: 'quality'
-        },
-    },
-    customBranch: {
-        legacy: {
-            branchPattern: /^refs\/heads\/legacy\/.+$/
-        },
-        hotfix: {
-            branchPattern: /^refs\/heads\/hotfix\/.+$/,
-            environment: 'quality'
-        }
-    },
     environment: {
         dev: {
             versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/
@@ -44,6 +24,33 @@ module.exports = {
         },
         catalog: {
             versionPattern: /^\d+\.\d+\.\d+$/
+        }
+    },
+    branchType: {
+        dev: {
+            pattern: /^refs\/heads\/develop$/,
+            environment: 'dev',
+            preRelease: true
+        },
+        rc: {
+            pattern: /^refs\/heads\/release\/.+$/,
+            environment: 'quality',
+            preRelease: true
+        },
+        legacy: {
+            pattern: /^refs\/heads\/legacy\/.+$/,
+            environment: null,
+            preRelease: false
+        },
+        hotfix: {
+            pattern: /^refs\/heads\/hotfix\/.+$/,
+            environment: 'quality',
+            preRelease: false
+        },
+        master: {
+            pattern: /^refs\/heads\/master$/,
+            environment: null,
+            preRelease: false
         }
     },
     team: {
@@ -69,7 +76,7 @@ module.exports = {
         }
     },
     interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm'],
-    projectGroup: {
+    projectWorkflow: {
         package: {
             classes: ['library', 'python-app'],
             packageFile: 'manifest.json',
@@ -95,7 +102,7 @@ module.exports = {
             packageFile: 'manifest.json',
             updaterType: 'json'
         },
-        lambda:  {
+        lambdaFunction:  {
             classes: ['lambda-function'],
             packageFile: 'manifest.json',
             updaterType: 'json'
