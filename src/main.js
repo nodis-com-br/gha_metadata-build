@@ -64,6 +64,23 @@ function getProjectWorkflow(projectClass) {
     }
 }
 
+
+function getDeployEnvironment(metadata) {
+
+    if (metadata.PRE_RELEASE_TYPE) return config.branchType[metadata.PRE_RELEASE_TYPE].environment;
+    else if (metadata.HOTFIX) return config.branchType.hotfix.environment;
+    else return config.team[metadata.TEAM].environment;
+
+}
+
+function matchVersionToBranch(metadata) {
+
+    if (!metadata.PROJECT_VERSION.match(config.environment[metadata.DEPLOY_ENVIRONMENT].versionPattern)) {
+        core.setFailed(['Branch mismatch: version', metadata.PROJECT_VERSION, 'should not be committed to branch', metadata.TARGET_BRANCH].join(' '));
+    }
+
+}
+
 function publishMetadata(metadata) {
 
     const artifactClient = artifact.create();
@@ -85,25 +102,6 @@ function publishMetadata(metadata) {
     core.info('Metadata: ' + JSON.stringify(metadata, null, 4));
 
 }
-
-function getDeployEnvironment(metadata) {
-
-    if (metadata.PRE_RELEASE_TYPE) return config.branchType[metadata.PRE_RELEASE_TYPE].environment;
-    else if (metadata.HOTFIX) return config.branchType.hotfix.environment;
-    else return config.team[metadata.TEAM].environment;
-
-}
-
-function validateVersion(metadata) {
-
-    if (metadata.PROJECT_VERSION.match(config.environment[metadata.DEPLOY_ENVIRONMENT].versionPattern)) return true;
-    else {
-        core.setFailed(['Branch mismatch: version', metadata.PROJECT_VERSION, 'should not be committed to branch', metadata.TARGET_BRANCH].join(' '));
-        return false
-    }
-
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -136,7 +134,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectWorkflow[metadata.PROJECT_WORKFLOW].packageFile;
 
     const packageFileContent = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
-    metadata.SKIP_TESTS = packageFileContent['skip_tests'];
+    metadata.SKIP_TESTS = 'skip_tests' in packageFileContent ? packageFileContent['skip_tests'] : false;
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
 
     const packageFileDef = {filename: metadata.PACKAGE_FILE};
@@ -194,13 +192,13 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.team[metadata.TEAM].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
-            if (metadata.TARGET_BRANCH.match(config.branchType.master.pattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
+            if (metadata.TARGET_BRANCH.match(config.branchType.default.pattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
                 metadata.VALIDATED_VERSION = metadata.PRE_BUMP_VERSION
             }
-            validateVersion(metadata);
             break;
 
         case 'lambdaFunction':
@@ -219,7 +217,6 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.ARTIFACT_BUCKET = config.webappsArtifactBucket;
             metadata.WEBAPP_BUCKET = config.webappBucketPrefix + '-' + metadata.PROJECT_NAME;
             metadata.SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
-
             break;
 
         default:

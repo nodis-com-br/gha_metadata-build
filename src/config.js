@@ -47,8 +47,8 @@ module.exports = {
             environment: 'quality',
             preRelease: false
         },
-        master: {
-            pattern: /^refs\/heads\/master$/,
+        default: {
+            pattern: /^refs\/heads\/(main|master)$/,
             environment: null,
             preRelease: false
         }
