@@ -108,7 +108,6 @@ function publishMetadata(metadata) {
 
 let metadata = {
     SKIP_BUMP: core.getBooleanInput('skip_bump'),
-    SKIP_VERSION_VALIDATION: core.getBooleanInput('skip_version_validation'),
     PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
     TARGET_BRANCH: process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF,
 };
@@ -204,7 +203,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
         case 'lambdaFunction':
 
             metadata.AWS_REGION = process.env.AWS_REGION;
-            metadata.FUNCTION_NAME = metadata.PROJECT_NAME.substring(3);
+            metadata.FUNCTION_NAME = metadata.PROJECT_NAME.replace(/^lb_/, '');
             metadata.ARTIFACT_NAME = metadata.FUNCTION_NAME + '.zip';
             metadata.ARTIFACT_FULLNAME = metadata.FUNCTION_NAME + '-' + metadata.PROJECT_VERSION + '.zip';
             metadata.ARTIFACT_PATH = metadata.FUNCTION_NAME;
