@@ -63,7 +63,7 @@ module.exports = {
             environment: 'prod'
         },
         experimento: {
-            repository: 'maestro_experimento',
+            repository: 'maestro_devback',
             environment: 'prod'
         },
         devops: {
