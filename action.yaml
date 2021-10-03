@@ -7,3 +7,15 @@ inputs:
   github_token:
     description: ''
     required: true
+  skip_bump:
+    description: ''
+    required: false
+    default: 'false'
+  skip_version_validation:
+    description: ''
+    required: false
+    default: 'false'
+  first_release:
+    description: ''
+    required: false
+    default: 'false'
