@@ -191,7 +191,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
-            matchVersionToBranch(metadata);
+            process.env.GITHUB_EVENT_NAME === 'pull_request' && matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.team[metadata.TEAM].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
