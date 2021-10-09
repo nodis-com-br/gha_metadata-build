@@ -75,7 +75,7 @@ function getDeployEnvironment(metadata) {
 
 function matchVersionToBranch(metadata) {
 
-    if (!metadata.PROJECT_VERSION.match(config.environment[metadata.DEPLOY_ENVIRONMENT].versionPattern)) {
+    if (process.env.GITHUB_EVENT_NAME !== 'pull_request' && !metadata.PROJECT_VERSION.match(config.environment[metadata.DEPLOY_ENVIRONMENT].versionPattern)) {
         core.setFailed(['Branch mismatch: version', metadata.PROJECT_VERSION, 'should not be committed to branch', metadata.TARGET_BRANCH].join(' '));
     }
 
@@ -191,7 +191,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
-            process.env.GITHUB_EVENT_NAME !== 'pull_request' && matchVersionToBranch(metadata);
+            matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.team[metadata.TEAM].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
