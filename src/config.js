@@ -83,7 +83,7 @@ module.exports = {
             updaterType: 'json'
         },
         kubernetesWorkload: {
-            classes: ['flask-app', 'nodejs-app', 'django-app', 'cronjob'],
+            classes: ['flask-app', 'nodejs-app', 'django-app', 'cronjob', 'csharp-app'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         } ,
