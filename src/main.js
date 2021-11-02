@@ -106,7 +106,7 @@ function publishMetadata(metadata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-let metadata = {
+let packageFileContent, metadata = {
     SKIP_BUMP: core.getBooleanInput('skip_bump'),
     PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
     TARGET_BRANCH: process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF,
@@ -132,7 +132,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PROJECT_WORKFLOW = getProjectWorkflow(metadata.PROJECT_CLASS);
     metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectWorkflow[metadata.PROJECT_WORKFLOW].packageFile;
 
-    const packageFileContent = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
+    packageFileContent = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
     metadata.SKIP_TESTS = 'skip_tests' in packageFileContent ? packageFileContent['skip_tests'] : false;
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
 
@@ -212,10 +212,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
         case 'webapp':
 
+            metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            metadata.SUBDOMAIN = packageFileContent['subdomain'];
             metadata.ARTIFACT_FILENAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz';
-            metadata.ARTIFACT_BUCKET = config.webappsArtifactBucket;
-            metadata.WEBAPP_BUCKET = config.webappBucketPrefix + '-' + metadata.PROJECT_NAME;
-            metadata.SUBDOMAIN = JSON.parse(fs.readFileSync(process.env.GITHUB_WORKSPACE +  '/package.json', 'utf-8'))['subdomain'];
+            metadata.WEBAPP_BUCKET = config.bucketPrefix + '-' + metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
+            metadata.AWS_ROLE = metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
             break;
 
         default:

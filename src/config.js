@@ -1,8 +1,7 @@
 const standardVersionYamlUpdater = require('standard-version-updater-yaml');
 
 module.exports = {
-    webappsArtifactBucket: 'nodis-webapp',
-    webappBucketPrefix: 'nodis-web',
+    bucketPrefix: 'nodis',
     lambdaBucketPrefix: 'nodis-lambda',
     containerRegistry: {
         public: 'docker.io/nodisbr',
@@ -99,7 +98,7 @@ module.exports = {
         },
         webapp:  {
             classes: ['react-app'],
-            packageFile: 'manifest.json',
+            packageFile: 'package.json',
             updaterType: 'json'
         },
         lambdaFunction:  {
