@@ -216,7 +216,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.SUBDOMAIN = packageFileContent['subdomain'];
             metadata.ARTIFACT_FILENAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz';
             metadata.WEBAPP_BUCKET = config.bucketPrefix + '-' + metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
-            metadata.AWS_ROLE = metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
+            metadata.VAULT_ROLE = metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
             break;
 
         default:
