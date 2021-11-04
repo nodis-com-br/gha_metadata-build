@@ -213,6 +213,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
         case 'webapp':
 
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            matchVersionToBranch(metadata);
             metadata.SUBDOMAIN = packageFileContent['subdomain'];
             metadata.ARTIFACT_FILENAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz';
             metadata.WEBAPP_BUCKET = config.bucketPrefix + '-' + metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
