@@ -109,7 +109,7 @@ function publishMetadata(metadata) {
 let packageFileContent, metadata = {
     SKIP_BUMP: core.getBooleanInput('skip_bump'),
     PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
-    TARGET_BRANCH: process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF : 'refs/heads/' + process.env.GITHUB_BASE_REF,
+    TARGET_BRANCH: process.env.GITHUB_BASE_REF ? 'refs/heads/' + process.env.GITHUB_BASE_REF : process.env.GITHUB_REF
 };
 
 metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
