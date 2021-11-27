@@ -215,6 +215,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
             matchVersionToBranch(metadata);
             metadata.SUBDOMAIN = packageFileContent['subdomain'];
+            metadata.CUSTOM_TYPES = JSON.stringify(packageFileContent.hasOwnProperty('custom_types') ? packageFileContent['custom_types'] : '[]');
             metadata.ARTIFACT_FILENAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz';
             metadata.WEBAPP_BUCKET = config.bucketPrefix + '-' + metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
             metadata.VAULT_ROLE = metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
