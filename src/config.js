@@ -23,7 +23,11 @@ module.exports = {
         },
         catalog: {
             versionPattern: /^\d+\.\d+\.\d+$/
+        },
+        backoffice: {
+            versionPattern: /^\d+\.\d+\.\d+$/
         }
+
     },
     branchType: {
         dev: {
@@ -68,6 +72,10 @@ module.exports = {
         devops: {
             repository: 'maestro_devback',
             environment: 'prod'
+        },
+        backoffice: {
+            repository: 'maestro_devback',
+            environment: 'backoffice'
         },
         catalog: {
             repository: 'maestro_catalog',
