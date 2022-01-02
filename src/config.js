@@ -11,24 +11,6 @@ module.exports = {
         "overrides",
         "annotations"
     ],
-    environment: {
-        dev: {
-            versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/
-        },
-        quality: {
-            versionPattern: /^\d+\.\d+\.\d+-rc\.\d+$/
-        },
-        prod: {
-            versionPattern: /^\d+\.\d+\.\d+$/
-        },
-        catalog: {
-            versionPattern: /^\d+\.\d+\.\d+$/
-        },
-        backoffice: {
-            versionPattern: /^\d+\.\d+\.\d+$/
-        }
-
-    },
     branchType: {
         dev: {
             pattern: /^refs\/heads\/develop$/,
@@ -40,14 +22,14 @@ module.exports = {
             environment: 'quality',
             preRelease: true
         },
-        legacy: {
-            pattern: /^refs\/heads\/legacy\/.+$/,
-            environment: null,
-            preRelease: false
-        },
         hotfix: {
             pattern: /^refs\/heads\/hotfix\/.+$/,
             environment: 'quality',
+            preRelease: false
+        },
+        legacy: {
+            pattern: /^refs\/heads\/legacy\/.+$/,
+            environment: null,
             preRelease: false
         },
         default: {
@@ -56,30 +38,29 @@ module.exports = {
             preRelease: false
         }
     },
-    team: {
-        devback: {
-            repository: 'maestro_devback',
-            environment: 'prod'
+    environment: {
+        dev: {
+            versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/,
+            preRelease: true
         },
-        devfront: {
-            repository: 'maestro_devback',
-            environment: 'prod'
+        quality: {
+            versionPattern: /^\d+\.\d+\.\d+-rc\.\d+$/,
+            preRelease: true
         },
-        experimento: {
+        prod: {
+            versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_devback',
-            environment: 'prod'
-        },
-        devops: {
-            repository: 'maestro_devback',
-            environment: 'prod'
-        },
-        backoffice: {
-            repository: 'maestro_devback',
-            environment: 'backoffice'
+            topics: ['devback', 'devfront', 'experimento', 'devops']
         },
         catalog: {
+            versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_catalog',
-            environment: 'catalog'
+            topics: ['catalog']
+        },
+        backoffice: {
+            versionPattern: /^\d+\.\d+\.\d+$/,
+            repository: 'maestro_devback',
+            topics: ['backoffice']
         }
     },
     interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm'],

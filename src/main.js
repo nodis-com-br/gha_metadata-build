@@ -62,14 +62,23 @@ function getProjectWorkflow(projectClass) {
     for (const k in config.projectWorkflow) {
         if (config.projectWorkflow.hasOwnProperty(k) && config.projectWorkflow[k].classes.includes(projectClass)) return k
     }
+
 }
 
-
-function getDeployEnvironment(metadata) {
+function getEnvironment(metadata, projectTopics) {
 
     if (metadata.PRE_RELEASE_TYPE) return config.branchType[metadata.PRE_RELEASE_TYPE].environment;
     else if (metadata.HOTFIX) return config.branchType.hotfix.environment;
-    else return config.team[metadata.TEAM].environment;
+    else {
+        for (const k in config.environment) {
+            if (config.environment.hasOwnProperty(k) && !config.environment[k].preRelease) {
+                let t = getMetadataFromTopics('environments', config.environment[k].topics, projectTopics, false);
+                if (t) return t
+            }
+        }
+    }
+    core.setFailed('Project environment could not be determined | topics [' + projectTopics.join(' ') + ']')
+
 
 }
 
@@ -126,7 +135,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 }).then(response => {
 
     const projectTopics = response['names'];
-    metadata.TEAM = getMetadataFromTopics('team', config.team, projectTopics, true);
+    metadata.ENVIRONMENT = getEnvironment(metadata, projectTopics);
     metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreter, projectTopics, true);
     metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectClasses(), projectTopics, true);
     metadata.PROJECT_WORKFLOW = getProjectWorkflow(metadata.PROJECT_CLASS);
@@ -190,9 +199,9 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
         case 'kubernetesWorkload':
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
-            metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            metadata.DEPLOY_ENVIRONMENT = metadata.ENVIRONMENT;
             matchVersionToBranch(metadata);
-            metadata.MAESTRO_REPOSITORY = config.team[metadata.TEAM].repository;
+            metadata.MAESTRO_REPOSITORY = config.environment[metadata.ENVIRONMENT].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
             if (metadata.TARGET_BRANCH.match(config.branchType.default.pattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
@@ -212,7 +221,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
         case 'webapp':
 
-            metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            metadata.DEPLOY_ENVIRONMENT = metadata.ENVIRONMENT;
             matchVersionToBranch(metadata);
             metadata.SUBDOMAIN = packageFileContent['subdomain'];
             metadata.CUSTOM_TYPES = JSON.stringify(packageFileContent.hasOwnProperty('custom_types') ? packageFileContent['custom_types'] : '[]');
