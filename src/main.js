@@ -67,19 +67,19 @@ function getProjectWorkflow(projectClass) {
 
 function getEnvironment(metadata, projectTopics) {
 
-    if (metadata.PRE_RELEASE_TYPE) return config.branchType[metadata.PRE_RELEASE_TYPE].environment;
-    else if (metadata.HOTFIX) return config.branchType.hotfix.environment;
-    else {
-        for (const k in config.environment) {
-            if (config.environment.hasOwnProperty(k) && !config.environment[k].preRelease) {
-                let t = getMetadataFromTopics('environments', config.environment[k].topics, projectTopics, false);
-                if (t) return t
-            }
+    for (const k in config.environment) {
+        if (config.environment.hasOwnProperty(k) && !config.environment[k].preRelease) {
+            if (getMetadataFromTopics('environments', config.environment[k].topics, projectTopics, false)) return k
         }
     }
     core.setFailed('Project environment could not be determined | topics [' + projectTopics.join(' ') + ']')
+}
 
+function getDeployEnvironment(metadata) {
 
+    if (metadata.PRE_RELEASE_TYPE) return config.branchType[metadata.PRE_RELEASE_TYPE].environment;
+    else if (metadata.HOTFIX) return config.branchType.hotfix.environment;
+    else return metadata.ENVIRONMENT
 }
 
 function matchVersionToBranch(metadata) {
@@ -199,7 +199,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
         case 'kubernetesWorkload':
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
-            metadata.DEPLOY_ENVIRONMENT = metadata.ENVIRONMENT;
+            metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
             matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.environment[metadata.ENVIRONMENT].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;

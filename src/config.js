@@ -25,7 +25,7 @@ module.exports = {
         hotfix: {
             pattern: /^refs\/heads\/hotfix\/.+$/,
             environment: 'quality',
-            preRelease: false
+            preRelease: true
         },
         legacy: {
             pattern: /^refs\/heads\/legacy\/.+$/,
@@ -41,16 +41,14 @@ module.exports = {
     environment: {
         dev: {
             versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/,
-            preRelease: true
         },
         quality: {
             versionPattern: /^\d+\.\d+\.\d+-rc\.\d+$/,
-            preRelease: true
         },
         prod: {
             versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_devback',
-            topics: ['devback', 'devfront', 'experimento', 'devops']
+            topics: ['devback', 'devfront', 'experimento', 'devops', 'prod']
         },
         catalog: {
             versionPattern: /^\d+\.\d+\.\d+$/,
