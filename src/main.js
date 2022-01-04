@@ -68,7 +68,7 @@ function getProjectWorkflow(projectClass) {
 function getEnvironment(metadata, projectTopics) {
 
     for (const k in config.environment) {
-        if (config.environment.hasOwnProperty(k) && !config.environment[k].preRelease) {
+        if (config.environment.hasOwnProperty(k) && config.environment[k].hasOwnProperty('topics')) {
             if (getMetadataFromTopics('environments', config.environment[k].topics, projectTopics, false)) return k
         }
     }
