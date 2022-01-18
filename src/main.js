@@ -186,7 +186,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
         case 'helmChart':
 
-            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^chart_/, '');
+            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
             break;
 
         case 'publicImage':
