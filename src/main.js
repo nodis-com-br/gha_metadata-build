@@ -118,9 +118,11 @@ function publishMetadata(metadata) {
 let packageFileContent, metadata = {
     SKIP_BUMP: core.getBooleanInput('skip_bump'),
     PROJECT_NAME: process.env.GITHUB_REPOSITORY.split('/')[1],
+    REPOSITORY_OWNER: process.env.GITHUB_REPOSITORY.split('/')[0],
     TARGET_BRANCH: process.env.GITHUB_BASE_REF ? 'refs/heads/' + process.env.GITHUB_BASE_REF : process.env.GITHUB_REF
 };
 
+metadata.REPOSITORY_NAME = metadata.PROJECT_NAME;
 metadata.PRE_RELEASE_TYPE = getPreReleaseType(metadata.TARGET_BRANCH);
 metadata.LEGACY = !!metadata.TARGET_BRANCH.match(config.branchType.legacy.pattern);
 metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.branchType.hotfix.pattern);
