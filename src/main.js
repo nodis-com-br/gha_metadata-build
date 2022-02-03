@@ -193,8 +193,9 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
         case 'publicImage':
 
+            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^dk_/, '');
             metadata.DOCKER_BUILD_FROM_MASTER = true;
-            metadata.DOCKER_IMAGE_NAME = config.containerRegistry.public + '/' + metadata.PROJECT_NAME.replace(/^dk_/, '');
+            metadata.DOCKER_IMAGE_NAME = config.containerRegistry.public + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
             break;
 
