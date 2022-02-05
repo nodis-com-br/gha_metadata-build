@@ -4,8 +4,8 @@ module.exports = {
     bucketPrefix: 'nodis',
     lambdaBucketPrefix: 'nodis-lambda',
     containerRegistry: {
-        public: 'docker.io/nodisbr',
-        private: 'registry.nodis.com.br'
+        public: 'ghcr.io/nodis-com-br',
+        private: 'ghcr.io/nodis-com-br'
     },
     packageOverrideKeys: [
         "overrides",
