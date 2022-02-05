@@ -3,10 +3,7 @@ const standardVersionYamlUpdater = require('standard-version-updater-yaml');
 module.exports = {
     bucketPrefix: 'nodis',
     lambdaBucketPrefix: 'nodis-lambda',
-    containerRegistry: {
-        public: 'ghcr.io/nodis-com-br',
-        private: 'ghcr.io/nodis-com-br'
-    },
+    containerRegistry: 'ghcr.io/nodis-com-br',
     packageOverrideKeys: [
         "overrides",
         "annotations"
@@ -73,7 +70,7 @@ module.exports = {
             packageFile: 'manifest.json',
             updaterType: 'json'
         } ,
-        publicImage: {
+        baseImage: {
             classes: ['public-image'],
             packageFile: 'manifest.json',
             updaterType: 'json'

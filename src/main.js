@@ -8,7 +8,7 @@ const process = require('process');
 const standardVersion = require('standard-version');
 const standardVersionDockerfileUpdater = require('@damlys/standard-version-updater-docker/dist/dockerfile.js');
 const standardVersionDockerComposeUpdater = require('@damlys/standard-version-updater-docker/dist/docker-compose.js');
-
+const environmentStream = fs.createWriteStream(process.env.GITHUB_ENV, {flags:'a'});
 
 // Load .env file for local testing
 require('dotenv').config();
@@ -144,8 +144,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectWorkflow[metadata.PROJECT_WORKFLOW].packageFile;
 
     packageFileContent = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
+    metadata.SKIP_BUMP = 'SKIP_BUMP' in packageFileContent ? packageFileContent.SKIP_BUMP : metadata.SKIP_BUMP;
     metadata.SKIP_TESTS = 'skip_tests' in packageFileContent ? packageFileContent['skip_tests'] : false;
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
+
+    environmentStream.write('SKIP_BUMP=' + metadata.SKIP_BUMP.toString()  + '\n');
 
     const packageFileDef = {filename: metadata.PACKAGE_FILE};
     if ('updaterModule' in config.projectWorkflow[metadata.PROJECT_WORKFLOW]) packageFileDef.updater = config.projectWorkflow[metadata.PROJECT_WORKFLOW].updaterModule;
@@ -191,11 +194,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
             break;
 
-        case 'publicImage':
+        case 'baseImage':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^dk_/, '');
             metadata.DOCKER_BUILD_FROM_MASTER = true;
-            metadata.DOCKER_IMAGE_NAME = config.containerRegistry.public + '/' + metadata.PROJECT_NAME;
+            metadata.DOCKER_IMAGE_NAME = config.containerRegistry + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
             break;
 
@@ -205,7 +208,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
             matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.environment[metadata.ENVIRONMENT].repository;
-            metadata.DOCKER_IMAGE_NAME = config.containerRegistry.private + '/' + metadata.PROJECT_NAME;
+            metadata.DOCKER_IMAGE_NAME = config.containerRegistry + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
             if (metadata.TARGET_BRANCH.match(config.branchType.default.pattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
                 metadata.VALIDATED_VERSION = metadata.PRE_BUMP_VERSION
