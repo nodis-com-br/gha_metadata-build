@@ -192,6 +192,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
         case 'helmChart':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
+            metadata.CHART_TYPE = packageFileContent.type;
             break;
 
         case 'baseImage':
