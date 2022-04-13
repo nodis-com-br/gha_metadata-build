@@ -58,7 +58,7 @@ module.exports = {
             topics: ['backoffice']
         }
     },
-    interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm'],
+    interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm', 'lua'],
     projectWorkflow: {
         package: {
             classes: ['library', 'python-app'],
