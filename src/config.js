@@ -70,6 +70,11 @@ module.exports = {
             packageFile: 'manifest.json',
             updaterType: 'json'
         } ,
+        kongPlugin: {
+            classes: ['kong-plugin'],
+            packageFile: 'manifest.json',
+            updaterType: 'json'
+        },
         baseImage: {
             classes: ['public-image'],
             packageFile: 'manifest.json',

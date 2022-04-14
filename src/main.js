@@ -195,6 +195,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.CHART_TYPE = packageFileContent.type;
             break;
 
+        case 'kongPlugin':
+
+            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^kp_/, '');
+            break;
+
         case 'baseImage':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^dk_/, '');
