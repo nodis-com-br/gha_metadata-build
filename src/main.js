@@ -200,6 +200,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^kp_/, '');
             break;
 
+        case 'vaultPlugin':
+
+            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^vp_/, '');
+            break;
+
         case 'baseImage':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^dk_/, '');

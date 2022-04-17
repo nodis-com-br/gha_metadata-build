@@ -58,7 +58,7 @@ module.exports = {
             topics: ['backoffice']
         }
     },
-    interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm', 'lua'],
+    interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm', 'lua', 'dotnet', 'golang'],
     projectWorkflow: {
         package: {
             classes: ['library', 'python-app'],
@@ -69,9 +69,14 @@ module.exports = {
             classes: ['flask-app', 'nodejs-app', 'django-app', 'cronjob', 'csharp-app'],
             packageFile: 'manifest.json',
             updaterType: 'json'
-        } ,
+        },
         kongPlugin: {
             classes: ['kong-plugin'],
+            packageFile: 'manifest.json',
+            updaterType: 'json'
+        },
+        vaultPlugin: {
+            classes: ['vault-plugin'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         },
