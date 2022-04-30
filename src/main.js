@@ -193,6 +193,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
             metadata.CHART_TYPE = packageFileContent.type;
+            metadata.ARTIFACT_NAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz'
             break;
 
         case 'kongPlugin':
