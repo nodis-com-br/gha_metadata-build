@@ -38,30 +38,35 @@ module.exports = {
     environment: {
         dev: {
             versionPattern: /^\d+\.\d+\.\d+-dev\.\d+$/,
-            targetCluster: "k8s0002"
+            targetCluster: "k8s0002",
+            defaultNamespace: "default"
         },
         quality: {
             versionPattern: /^\d+\.\d+\.\d+-rc\.\d+$/,
-            targetCluster: "k8s0001"
+            targetCluster: "k8s0001",
+            defaultNamespace: "default"
         },
         prod: {
             versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_devback',
             topics: ['devback', 'devfront', 'experimento', 'devops', 'prod'],
-            targetCluster: "k8s0001"
+            targetCluster: "k8s0001",
+            defaultNamespace: "default"
         },
         catalog: {
             versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_catalog',
             topics: ['catalog'],
-            targetCluster: "k8s0002"
+            targetCluster: "k8s0002",
+            defaultNamespace: "default"
 
         },
         backoffice: {
             versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_devback',
             topics: ['backoffice'],
-            targetCluster: "k8s0001"
+            targetCluster: "k8s0001",
+            defaultNamespace: "default"
 
         }
     },

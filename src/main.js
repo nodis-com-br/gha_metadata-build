@@ -1,3 +1,6 @@
+// Load .env file for local testing
+require('dotenv').config();
+
 const core = require('@actions/core');
 const artifact = require('@actions/artifact');
 const fs = require('fs');
@@ -10,8 +13,7 @@ const standardVersionDockerfileUpdater = require('@damlys/standard-version-updat
 const standardVersionDockerComposeUpdater = require('@damlys/standard-version-updater-docker/dist/docker-compose.js');
 const environmentStream = fs.createWriteStream(process.env.GITHUB_ENV, {flags:'a'});
 
-// Load .env file for local testing
-require('dotenv').config();
+
 
 
 function getPreReleaseType(ref) {
@@ -218,7 +220,9 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
-            metadata.DEPLOY_CLUSTER = config.environment[metadata.ENVIRONMENT].targetCluster
+            metadata.KUBERNETES_CLUSTER = config.environment[metadata.ENVIRONMENT].targetCluster
+            metadata.KUBERNETES_NAMESPACE = config.environment[metadata.ENVIRONMENT].defaultNamespace
+            metadata.KUBERNETES_WORKLOAD_NAME = metadata.PROJECT_NAME.replace(/_/g, '-')
             matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.environment[metadata.ENVIRONMENT].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry + '/' + metadata.PROJECT_NAME;
