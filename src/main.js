@@ -220,13 +220,15 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
-            metadata.KUBERNETES_CLUSTER = config.environment[metadata.ENVIRONMENT].targetCluster
-            metadata.KUBERNETES_NAMESPACE = config.environment[metadata.ENVIRONMENT].defaultNamespace
-            metadata.KUBERNETES_WORKLOAD_NAME = metadata.PROJECT_NAME.replace(/_/g, '-')
+
             matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.environment[metadata.ENVIRONMENT].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = [metadata.PROJECT_VERSION, metadata.DEPLOY_ENVIRONMENT , metadata.LEGACY ? 'legacy' : 'latest'].join(' ');
+            metadata.KUBERNETES_CLUSTER = config.environment[metadata.DEPLOY_ENVIRONMENT].targetCluster
+            metadata.KUBERNETES_NAMESPACE = config.environment[metadata.DEPLOY_ENVIRONMENT].defaultNamespace
+            metadata.KUBERNETES_WORKLOAD_TYPE = metadata.PROJECT_CLASS === 'cronjob' ? metadata.PROJECT_CLASS : "deployment"
+            metadata.KUBERNETES_WORKLOAD_NAME = metadata.PROJECT_NAME.replace(/_/g, '-')
             if (metadata.TARGET_BRANCH.match(config.branchType.default.pattern) && metadata.PRE_BUMP_VERSION.match(config.environment.quality.versionPattern)) {
                 metadata.VALIDATED_VERSION = metadata.PRE_BUMP_VERSION
             }
