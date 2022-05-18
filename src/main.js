@@ -218,6 +218,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
             metadata.DOCKER_BUILD_FROM_MASTER = false;
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
+            metadata.DEPLOY_CLUSTER = config.environment[metadata.ENVIRONMENT].targetCluster
             matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.environment[metadata.ENVIRONMENT].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry + '/' + metadata.PROJECT_NAME;
