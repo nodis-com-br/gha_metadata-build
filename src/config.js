@@ -43,7 +43,7 @@ module.exports = {
         },
         quality: {
             versionPattern: /^\d+\.\d+\.\d+-rc\.\d+$/,
-            targetCluster: "k8s0001",
+            targetCluster: "k8s0002",
             defaultNamespace: "default"
         },
         prod: {
