@@ -57,7 +57,7 @@ module.exports = {
             versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_catalog',
             topics: ['catalog'],
-            targetCluster: "k8s0001",
+            targetCluster: "k8s0002",
             defaultNamespace: "default"
 
         },
