@@ -107,6 +107,11 @@ module.exports = {
             packageFile: 'package.json',
             updaterType: 'json'
         },
+        admissionController: {
+            classes: ['admission-controller'],
+            packageFile: 'manifest.json',
+            updaterType: 'json'
+        },
         lambdaFunction:  {
             classes: ['lambda-function'],
             packageFile: 'manifest.json',

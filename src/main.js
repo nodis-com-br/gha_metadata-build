@@ -209,6 +209,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             break;
 
         case 'baseImage':
+        case 'admissionController':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^dk_/, '');
             metadata.DOCKER_BUILD_FROM_MASTER = true;
