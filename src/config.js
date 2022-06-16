@@ -82,12 +82,12 @@ module.exports = {
             packageFile: 'manifest.json',
             updaterType: 'json'
         },
-        kongPlugin: {
+        luaPackage: {
             classes: ['kong-plugin'],
             packageFile: 'manifest.json',
             updaterType: 'json'
         },
-        vaultPlugin: {
+        golangApp: {
             classes: ['vault-plugin'],
             packageFile: 'manifest.json',
             updaterType: 'json'
@@ -102,7 +102,7 @@ module.exports = {
             packageFile: 'Chart.yaml',
             updaterModule: standardVersionYamlUpdater
         },
-        webapp:  {
+        staticWebsite:  {
             classes: ['react-app'],
             packageFile: 'package.json',
             updaterType: 'json'

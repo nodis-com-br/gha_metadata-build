@@ -187,6 +187,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     switch(metadata.PROJECT_WORKFLOW) {
 
+        case 'golangApp':
         case 'package':
 
             break;
@@ -198,14 +199,9 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.ARTIFACT_NAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz'
             break;
 
-        case 'kongPlugin':
+        case 'luaPackage':
 
             metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^kp_/, '');
-            break;
-
-        case 'vaultPlugin':
-
-            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^vp_/, '');
             break;
 
         case 'baseImage':
@@ -245,7 +241,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + metadata.AWS_REGION;
             break;
 
-        case 'webapp':
+        case 'staticWebsite':
 
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
             matchVersionToBranch(metadata);
