@@ -24,15 +24,7 @@ function getPreReleaseType(ref) {
 
 }
 
-function parsePackageFile(manifestFilePath) {
 
-    try {
-        return yamlParser.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
-    } catch (e) {
-        core.setFailed(e)
-    }
-
-}
 
 function getMetadataFromTopics(label, typeCollection, projectTopics, required) {
 
@@ -45,6 +37,28 @@ function getMetadataFromTopics(label, typeCollection, projectTopics, required) {
     if (matches.length === 1) return matches[0];
     else if (matches.length === 0) required && core.setFailed('Project missing ' + label + ' topic');
     else core.setFailed('Project has multiple ' + label + ' topics [' + matches.join(' ') + ']');
+
+}
+function getPackageFile() {
+
+    let packageFile
+
+    config.packageFilenames.forEach(function (filename) {
+        let fullFilename = process.env.GITHUB_WORKSPACE + '/' + filename;
+        if  (fs.existsSync(fullFilename)) packageFile = fullFilename
+    })
+
+    if (packageFile) return packageFile
+    else core.setFailed("Package file not found")
+
+}
+function parsePackageFile(manifestFilePath) {
+
+    try {
+        return yamlParser.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
+    } catch (e) {
+        core.setFailed(e)
+    }
 
 }
 
@@ -95,7 +109,7 @@ function matchVersionToBranch(metadata) {
 function publishMetadata(metadata) {
 
     const artifactClient = artifact.create();
-    const packageFile = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
+    const packageFile = parsePackageFile(metadata.PACKAGE_FILE);
 
     for (const i in config.packageOverrideKeys) {
         const k = config.packageOverrideKeys[i];
@@ -143,9 +157,9 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreter, projectTopics, true);
     metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectClasses(), projectTopics, true);
     metadata.PROJECT_WORKFLOW = getProjectWorkflow(metadata.PROJECT_CLASS);
-    metadata.PACKAGE_FILE = process.env.GITHUB_WORKSPACE + '/' + config.projectWorkflow[metadata.PROJECT_WORKFLOW].packageFile;
+    metadata.PACKAGE_FILE = getPackageFile();
 
-    packageFileContent = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8');
+    packageFileContent = parsePackageFile(metadata.PACKAGE_FILE);
     metadata.SKIP_BUMP = 'SKIP_BUMP' in packageFileContent ? packageFileContent.SKIP_BUMP : metadata.SKIP_BUMP;
     metadata.SKIP_TESTS = 'skip_tests' in packageFileContent ? packageFileContent['skip_tests'] : false;
     metadata.PRE_BUMP_VERSION = packageFileContent['version'];
@@ -183,7 +197,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
 }).then(() => {
 
-    metadata.PROJECT_VERSION = parsePackageFile(metadata.PACKAGE_FILE, 'utf-8').version;
+    metadata.PROJECT_VERSION = parsePackageFile(metadata.PACKAGE_FILE).version;
 
     switch(metadata.PROJECT_WORKFLOW) {
 
