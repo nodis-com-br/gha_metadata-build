@@ -9,11 +9,7 @@ const fetch = require('node-fetch');
 const config = require('./config.js');
 const process = require('process');
 const standardVersion = require('standard-version');
-const standardVersionDockerfileUpdater = require('@damlys/standard-version-updater-docker/dist/dockerfile.js');
-const standardVersionDockerComposeUpdater = require('@damlys/standard-version-updater-docker/dist/docker-compose.js');
 const environmentStream = fs.createWriteStream(process.env.GITHUB_ENV, {flags:'a'});
-
-
 
 
 function getPreReleaseType(ref) {
@@ -23,8 +19,6 @@ function getPreReleaseType(ref) {
     }
 
 }
-
-
 
 function getMetadataFromTopics(label, typeCollection, projectTopics, required) {
 
@@ -43,8 +37,8 @@ function getPackageFile() {
 
     let packageFile
 
-    config.packageFilenames.forEach(function (filename) {
-        let fullFilename = process.env.GITHUB_WORKSPACE + '/' + filename;
+    config.packageFiles.forEach(function (record) {
+        let fullFilename = process.env.GITHUB_WORKSPACE + '/' + record.filename;
         if  (fs.existsSync(fullFilename)) packageFile = fullFilename
     })
 
@@ -52,6 +46,7 @@ function getPackageFile() {
     else core.setFailed("Package file not found")
 
 }
+
 function parsePackageFile(manifestFilePath) {
 
     try {
@@ -71,6 +66,7 @@ function aggregateProjectClasses() {
     }
 
     return classArray
+
 }
 
 function getProjectWorkflow(projectClass) {
@@ -83,12 +79,16 @@ function getProjectWorkflow(projectClass) {
 
 function getEnvironment(metadata, projectTopics) {
 
+    let environment
+
     for (const k in config.environment) {
         if (config.environment.hasOwnProperty(k) && config.environment[k].hasOwnProperty('topics')) {
-            if (getMetadataFromTopics('environments', config.environment[k].topics, projectTopics, false)) return k
+            if (getMetadataFromTopics('environments', config.environment[k].topics, projectTopics, false)) {
+                environment = k
+            }
         }
     }
-    core.setFailed('Project environment could not be determined | topics [' + projectTopics.join(' ') + ']')
+    return environment
 }
 
 function getDeployEnvironment(metadata) {
@@ -158,7 +158,6 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
     metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectClasses(), projectTopics, true);
     metadata.PROJECT_WORKFLOW = getProjectWorkflow(metadata.PROJECT_CLASS);
     metadata.PACKAGE_FILE = getPackageFile();
-
     packageFileContent = parsePackageFile(metadata.PACKAGE_FILE);
     metadata.SKIP_BUMP = 'SKIP_BUMP' in packageFileContent ? packageFileContent.SKIP_BUMP : metadata.SKIP_BUMP;
     metadata.SKIP_TESTS = 'skip_tests' in packageFileContent ? packageFileContent['skip_tests'] : false;
@@ -166,25 +165,9 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     environmentStream.write('SKIP_BUMP=' + metadata.SKIP_BUMP.toString()  + '\n');
 
-    const packageFileDef = {filename: metadata.PACKAGE_FILE};
-    if ('updaterModule' in config.projectWorkflow[metadata.PROJECT_WORKFLOW]) packageFileDef.updater = config.projectWorkflow[metadata.PROJECT_WORKFLOW].updaterModule;
-    else if ('updaterType' in config.projectWorkflow[metadata.PROJECT_WORKFLOW]) packageFileDef.type = config.projectWorkflow[metadata.PROJECT_WORKFLOW].updaterType;
-
     let standardVersionArgv = {
-        packageFiles: [
-            packageFileDef
-        ],
-        bumpFiles: [
-            packageFileDef,
-            {
-                filename: "Dockerfile",
-                updater: standardVersionDockerfileUpdater
-            },
-            {
-                filename: "docker-compose.yml",
-                updater: standardVersionDockerComposeUpdater
-            }
-        ],
+        packageFiles: config.packageFiles,
+        bumpFiles: Array.prototype.concat(config.packageFiles, config.bumpFiles),
         firstRelease: core.getBooleanInput('first_release'),
         silent: metadata.SKIP_BUMP,
         dryRun: metadata.SKIP_BUMP,
@@ -201,37 +184,19 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     switch(metadata.PROJECT_WORKFLOW) {
 
-        case 'golangApp':
         case 'package':
-
             break;
 
-        case 'helmChart':
-
-            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^charts_/, '');
-            metadata.CHART_TYPE = packageFileContent.type;
-            metadata.ARTIFACT_NAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz'
-            break;
-
-        case 'luaPackage':
-
-            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^kp_/, '');
-            break;
-
-        case 'baseImage':
-        case 'admissionController':
-
-            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^dk_/, '');
+        case 'dockerImage':
+            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^(dk|docker)[_-]/, '');
             metadata.DOCKER_BUILD_FROM_MASTER = true;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry + '/' + metadata.PROJECT_NAME;
             metadata.DOCKER_IMAGE_TAGS = 'latest ' + metadata.PROJECT_VERSION;
             break;
 
         case 'kubernetesWorkload':
-
             metadata.DOCKER_BUILD_FROM_MASTER = false;
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
-
             matchVersionToBranch(metadata);
             metadata.MAESTRO_REPOSITORY = config.environment[metadata.ENVIRONMENT].repository;
             metadata.DOCKER_IMAGE_NAME = config.containerRegistry + '/' + metadata.PROJECT_NAME;
@@ -245,18 +210,13 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             }
             break;
 
-        case 'lambdaFunction':
-
-            metadata.AWS_REGION = process.env.AWS_REGION;
-            metadata.FUNCTION_NAME = metadata.PROJECT_NAME.replace(/^lb_/, '');
-            metadata.ARTIFACT_NAME = metadata.FUNCTION_NAME + '.zip';
-            metadata.ARTIFACT_FULLNAME = metadata.FUNCTION_NAME + '-' + metadata.PROJECT_VERSION + '.zip';
-            metadata.ARTIFACT_PATH = metadata.FUNCTION_NAME;
-            metadata.ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + metadata.AWS_REGION;
+        case 'helmChart':
+            metadata.PROJECT_NAME = metadata.PROJECT_NAME.replace(/^(chart|charts)[_-]/, '');
+            metadata.CHART_TYPE = packageFileContent.type;
+            metadata.ARTIFACT_NAME = metadata.PROJECT_NAME + '-' + metadata.PROJECT_VERSION + '.tgz'
             break;
 
-        case 'staticWebsite':
-
+        case 'website':
             metadata.DEPLOY_ENVIRONMENT = getDeployEnvironment(metadata);
             matchVersionToBranch(metadata);
             metadata.SUBDOMAIN = packageFileContent['subdomain'];
@@ -266,9 +226,17 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.VAULT_ROLE = metadata.DEPLOY_ENVIRONMENT + '-' + metadata.SUBDOMAIN;
             break;
 
-        default:
+        case 'lambdaFunction':
+            metadata.AWS_REGION = process.env.AWS_REGION;
+            metadata.FUNCTION_NAME = metadata.PROJECT_NAME.replace(/^(lb|lambda)[_-]/, '');
+            metadata.ARTIFACT_NAME = metadata.FUNCTION_NAME + '.zip';
+            metadata.ARTIFACT_FULLNAME = metadata.FUNCTION_NAME + '-' + metadata.PROJECT_VERSION + '.zip';
+            metadata.ARTIFACT_PATH = metadata.FUNCTION_NAME;
+            metadata.ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + metadata.AWS_REGION;
+            break;
 
-            core.setFailed('Workflow not found for ' + metadata.PROJECT_CLASS);
+        default:
+            core.setFailed('no workflow not found for ' + metadata.PROJECT_CLASS);
 
     }
 

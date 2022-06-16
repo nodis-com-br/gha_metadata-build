@@ -1,4 +1,6 @@
-const standardVersionYamlUpdater = require('standard-version-updater-yaml');
+const standardVersionYamlUpdater = require("standard-version-updater-yaml");
+const standardVersionDockerfileUpdater = require("@damlys/standard-version-updater-docker/dist/dockerfile");
+const standardVersionDockerComposeUpdater = require("@damlys/standard-version-updater-docker");
 
 module.exports = {
     bucketPrefix: 'nodis',
@@ -7,6 +9,30 @@ module.exports = {
     packageOverrideKeys: [
         "overrides",
         "annotations"
+    ],
+    packageFiles:  [
+        {
+            filename: "manifest.json",
+            type: 'json'
+        },
+        {
+            filename: "package.json",
+            type: 'json'
+        },
+        {
+            filename: "Chart.yaml",
+            updater: standardVersionYamlUpdater
+        }
+    ],
+    bumpFiles:  [
+        {
+            filename: "Dockerfile",
+            updater: standardVersionDockerfileUpdater
+        },
+        {
+            filename: "docker-compose.yml",
+            updater: standardVersionDockerComposeUpdater
+        }
     ],
     branchType: {
         dev: {
@@ -49,7 +75,7 @@ module.exports = {
         prod: {
             versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_devback',
-            topics: ['devback', 'devfront', 'experimento', 'devops', 'prod'],
+            topics: ['devback', 'prod'],
             targetCluster: "prod-k8s0001",
             defaultNamespace: "default"
         },
@@ -67,51 +93,27 @@ module.exports = {
             topics: ['backoffice'],
             targetCluster: "backoffice-k8s0002",
             defaultNamespace: "default"
-
-        }
+        },
     },
-    packageFilenames: [
-        'manifest.json',
-        'package.json',
-        'Chart.yaml'
-    ],
-    interpreter: ['python', 'nodejs', 'shell', 'docker', 'helm', 'lua', 'dotnet', 'golang'],
+    interpreter: ['python', 'nodejs', 'lua', 'csharp', 'golang', 'shell', 'docker', 'helm'],
     projectWorkflow: {
         package: {
-            classes: ['library', 'python-app'],
-            updaterType: 'json'
+            classes: ['package', 'library', 'python-app', 'kong-plugin', 'vault-plugin']
         },
         kubernetesWorkload: {
-            classes: ['flask-app', 'nodejs-app', 'django-app', 'cronjob', 'csharp-app'],
-            updaterType: 'json'
+            classes: ['deployment', 'cronjob', 'flask-app', 'nodejs-app', 'django-app', 'csharp-app']
         },
-        luaPackage: {
-            classes: ['kong-plugin'],
-            updaterType: 'json'
-        },
-        golangApp: {
-            classes: ['vault-plugin'],
-            updaterType: 'json'
-        },
-        baseImage: {
-            classes: ['public-image'],
-            updaterType: 'json'
+        dockerImage: {
+            classes: ['docker-image', 'public-image']
         },
         helmChart:  {
-            classes: ['helm-chart'],
-            updaterModule: standardVersionYamlUpdater
+            classes: ['helm-chart']
         },
-        staticWebsite:  {
-            classes: ['react-app'],
-            updaterType: 'json'
-        },
-        admissionController: {
-            classes: ['admission-controller'],
-            updaterType: 'json'
+        website:  {
+            classes: ['website', 'react-app']
         },
         lambdaFunction:  {
-            classes: ['lambda-function'],
-            updaterType: 'json'
+            classes: ['lambda-function']
         }
     }
 };
