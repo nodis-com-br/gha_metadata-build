@@ -95,10 +95,10 @@ module.exports = {
             defaultNamespace: "default"
         },
     },
-    interpreter: ['python', 'nodejs', 'lua', 'csharp', 'golang', 'shell', 'docker', 'helm'],
+    language: ['python', 'nodejs', 'lua', 'csharp', 'go', 'shell', 'docker', 'helm'],
     projectWorkflow: {
         package: {
-            classes: ['package', 'library', 'python-app', 'kong-plugin', 'vault-plugin']
+            classes: ['package', 'library', 'python-app', 'kong-plugin']
         },
         kubernetesWorkload: {
             classes: ['deployment', 'cronjob', 'flask-app', 'nodejs-app', 'django-app', 'csharp-app']
@@ -108,6 +108,9 @@ module.exports = {
         },
         helmChart:  {
             classes: ['helm-chart']
+        },
+        goApplication: {
+            classes: ['vault-plugin']
         },
         website:  {
             classes: ['website', 'react-app']

@@ -13,74 +13,59 @@ const environmentStream = fs.createWriteStream(process.env.GITHUB_ENV, {flags:'a
 
 
 function getPreReleaseType(ref) {
-
     for (const k in config.branchType) {
         if (config.branchType.hasOwnProperty(k) && config.branchType[k].preRelease && ref.match(config.branchType[k].pattern)) return k;
     }
-
 }
 
 function getMetadataFromTopics(label, typeCollection, projectTopics, required) {
-
     let matches = [];
     for (const t of projectTopics) {
         if (Array.isArray(typeCollection)) typeCollection.includes(t) && matches.push(t);
         else t in typeCollection && matches.push(t);
     }
-
     if (matches.length === 1) return matches[0];
     else if (matches.length === 0) required && core.setFailed('Project missing ' + label + ' topic');
     else core.setFailed('Project has multiple ' + label + ' topics [' + matches.join(' ') + ']');
-
 }
+
 function getPackageFile() {
-
     let packageFile
-
-    config.packageFiles.forEach(function (record) {
-        let fullFilename = process.env.GITHUB_WORKSPACE + '/' + record.filename;
-        if  (fs.existsSync(fullFilename)) packageFile = fullFilename
-    })
-
+    for (let i = 0; i < config.packageFiles.length; ++i ){
+        let fullFilename = process.env.GITHUB_WORKSPACE + '/' + config.packageFiles[i].filename;
+        if  (fs.existsSync(fullFilename)) {
+            packageFile = fullFilename
+            break
+        }
+    }
     if (packageFile) return packageFile
     else core.setFailed("Package file not found")
-
 }
 
 function parsePackageFile(manifestFilePath) {
-
     try {
         return yamlParser.parse(fs.readFileSync(manifestFilePath, 'utf-8'));
     } catch (e) {
         core.setFailed(e)
     }
-
 }
 
 function aggregateProjectClasses() {
-
     let classArray = [];
-
     for (const k in config.projectWorkflow) {
         if (config.projectWorkflow.hasOwnProperty(k)) classArray = classArray.concat(config.projectWorkflow[k].classes)
     }
-
     return classArray
-
 }
 
 function getProjectWorkflow(projectClass) {
-
     for (const k in config.projectWorkflow) {
         if (config.projectWorkflow.hasOwnProperty(k) && config.projectWorkflow[k].classes.includes(projectClass)) return k
     }
-
 }
 
 function getEnvironment(metadata, projectTopics) {
-
     let environment
-
     for (const k in config.environment) {
         if (config.environment.hasOwnProperty(k) && config.environment[k].hasOwnProperty('topics')) {
             if (getMetadataFromTopics('environments', config.environment[k].topics, projectTopics, false)) {
@@ -92,40 +77,31 @@ function getEnvironment(metadata, projectTopics) {
 }
 
 function getDeployEnvironment(metadata) {
-
     if (metadata.PRE_RELEASE_TYPE) return config.branchType[metadata.PRE_RELEASE_TYPE].environment;
     else if (metadata.HOTFIX) return config.branchType.hotfix.environment;
     else return metadata.ENVIRONMENT
 }
 
 function matchVersionToBranch(metadata) {
-
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request' && !metadata.PROJECT_VERSION.match(config.environment[metadata.DEPLOY_ENVIRONMENT].versionPattern)) {
         core.setFailed(['Branch mismatch: version', metadata.PROJECT_VERSION, 'should not be committed to branch', metadata.TARGET_BRANCH].join(' '));
     }
-
 }
 
 function publishMetadata(metadata) {
-
     const artifactClient = artifact.create();
     const packageFile = parsePackageFile(metadata.PACKAGE_FILE);
-
     for (const i in config.packageOverrideKeys) {
         const k = config.packageOverrideKeys[i];
         if (k in packageFile) {
             for (const j in packageFile[k]) if (packageFile[k].hasOwnProperty(j)) metadata[j] = packageFile[k][j];
         }
     }
-
     fs.writeFileSync('./metadata.json', JSON.stringify(metadata, null, 2));
-
     artifactClient
         .uploadArtifact('metadata', ['metadata.json'], '.')
         .catch(error => core.setFailed(error));
-
     core.info('Metadata: ' + JSON.stringify(metadata, null, 4));
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,6 +121,7 @@ metadata.HOTFIX = !!metadata.TARGET_BRANCH.match(config.branchType.hotfix.patter
 
 const gitHubUrl = process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/topics';
 const gitHubHeaders = {Authorization: 'token ' + core.getInput('github_token'), Accept: "application/vnd.github.mercy-preview+json"};
+
 fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     if (response['status'] === 200) return response['json']();
@@ -154,7 +131,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     const projectTopics = response['names'];
     metadata.ENVIRONMENT = getEnvironment(metadata, projectTopics);
-    metadata.INTERPRETER = getMetadataFromTopics('interpreter', config.interpreter, projectTopics, true);
+    metadata.LANGUAGE = getMetadataFromTopics('language', config.language, projectTopics, true);
     metadata.PROJECT_CLASS = getMetadataFromTopics('class', aggregateProjectClasses(), projectTopics, true);
     metadata.PROJECT_WORKFLOW = getProjectWorkflow(metadata.PROJECT_CLASS);
     metadata.PACKAGE_FILE = getPackageFile();
@@ -235,6 +212,11 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
             metadata.ARTIFACT_BUCKET = config.lambdaBucketPrefix + '-' + metadata.AWS_REGION;
             break;
 
+        case 'goApplication': {
+            metadata.GO_BUILD_IMAGE_TAG = packageFileContent["go_build_image_tag"]
+            metadata.GO_MAIN_FILE = packageFileContent["go_main_file"]
+            break;
+        }
         default:
             core.setFailed('no workflow not found for ' + metadata.PROJECT_CLASS);
 
