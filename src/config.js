@@ -75,7 +75,7 @@ module.exports = {
         prod: {
             versionPattern: /^\d+\.\d+\.\d+$/,
             repository: 'maestro_devback',
-            topics: ['devback', 'prod'],
+            topics: ['prod'],
             targetCluster: "prod-k8s0001",
             defaultNamespace: "default"
         },
@@ -95,13 +95,13 @@ module.exports = {
             defaultNamespace: "default"
         },
     },
-    language: ['python', 'nodejs', 'lua', 'csharp', 'go', 'shell', 'docker', 'helm'],
+    language: ['javascript', 'typescript', 'python', 'lua', 'csharp', 'go', 'shell', 'helm', 'docker'],
     projectWorkflow: {
         package: {
-            classes: ['package', 'library', 'python-app', 'kong-plugin']
+            classes: ['package', 'library', 'python-app']
         },
         kubernetesWorkload: {
-            classes: ['deployment', 'cronjob', 'flask-app', 'nodejs-app', 'django-app', 'csharp-app']
+            classes: ['deployment', 'cronjob']
         },
         dockerImage: {
             classes: ['docker-image', 'public-image']
@@ -111,6 +111,9 @@ module.exports = {
         },
         goApplication: {
             classes: ['vault-plugin']
+        },
+        luaRock: {
+            classes: ['kong-plugin']
         },
         website:  {
             classes: ['website', 'react-app']
