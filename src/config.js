@@ -97,14 +97,14 @@ module.exports = {
     },
     language: ['javascript', 'typescript', 'python', 'lua', 'csharp', 'go', 'shell', 'helm', 'docker'],
     projectWorkflow: {
-        package: {
-            classes: ['package', 'library', 'python-app']
+        library: {
+            classes: ['package', 'library']
         },
         kubernetesWorkload: {
             classes: ['deployment', 'cronjob']
         },
         dockerImage: {
-            classes: ['docker-image', 'public-image']
+            classes: ['docker-image']
         },
         helmChart:  {
             classes: ['helm-chart']

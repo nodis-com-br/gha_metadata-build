@@ -161,7 +161,7 @@ fetch(gitHubUrl, {headers: gitHubHeaders}).then(response => {
 
     switch(metadata.PROJECT_WORKFLOW) {
 
-        case 'package':
+        case 'library':
         case 'luaRock':
             break;
 
